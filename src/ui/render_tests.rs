@@ -105,3 +105,30 @@ fn dump_frame() {
     }
     println!("{}", out);
 }
+
+// Plays many random games through the real rules to prove the loop always
+// terminates and never panics, whatever the dice do.
+#[test]
+fn random_games_always_finish() {
+    use crate::game::rules::Dice;
+    use crate::game::state::Game;
+
+    struct Rng(u32);
+    impl Dice for Rng {
+        fn roll(&mut self) -> u8 {
+            self.0 = self.0.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            ((self.0 >> 16) % 6 + 1) as u8
+        }
+    }
+
+    for seed in 0..200u32 {
+        let mut game = Game::new((seed % 5 + 2) as usize).unwrap();
+        let mut dice = Rng(seed.wrapping_mul(2_654_435_761).max(1));
+        let mut turns = 0;
+        while game.winner.is_none() {
+            game.roll(&mut dice);
+            turns += 1;
+            assert!(turns < 20_000, "seed {} never finished", seed);
+        }
+    }
+}
