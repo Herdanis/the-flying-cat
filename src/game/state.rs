@@ -3,7 +3,7 @@
 // ============================================
 
 use super::board::{Board, LAST_SQUARE};
-use super::rules::{apply_move, Dice, MoveResult};
+use super::rules::{Dice, MoveResult, take_turn};
 
 pub const MIN_PLAYERS: usize = 2;
 pub const MAX_PLAYERS: usize = 6;
@@ -60,7 +60,7 @@ impl Game {
         }
 
         let from = self.players[self.turn].position;
-        let (to, result) = apply_move(&self.board, from, dice.roll().clamp(1, 6));
+        let (to, result) = take_turn(&self.board, from, dice);
         self.players[self.turn].position = to;
 
         let who = self.players[self.turn].name.clone();

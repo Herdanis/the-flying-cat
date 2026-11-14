@@ -76,8 +76,9 @@ impl Board {
     }
 
     pub fn leg_name(&self, square: u8) -> &'static str {
-        let n = self.legs.len() as u32;
-        let idx = ((square.saturating_sub(1)) as u32 * n / LAST_SQUARE as u32).min(n - 1);
+        let legs = self.legs.len() as u32;
+        let per_leg = (LAST_SQUARE as u32).div_ceil(legs);
+        let idx = ((square.clamp(1, LAST_SQUARE) as u32 - 1) / per_leg).min(legs - 1);
         self.legs[idx as usize]
     }
 }

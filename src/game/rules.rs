@@ -17,8 +17,7 @@ pub enum MoveResult {
 
 pub fn take_turn(board: &Board, from: u8, dice: &mut impl Dice) -> (u8, MoveResult) {
     let roll = dice.roll().clamp(1, 6);
-    let (to, result) = apply_move(board, from, roll);
-    (to, result)
+    apply_move(board, from, roll)
 }
 
 pub fn apply_move(board: &Board, from: u8, roll: u8) -> (u8, MoveResult) {
@@ -100,7 +99,13 @@ mod tests {
             for roll in 1..=6u8 {
                 let (pos, result) = apply_move(&b, start, roll);
                 if matches!(result, MoveResult::Bounced(_)) {
-                    assert!(pos < LAST_SQUARE, "bounce from {} with {} reached {}", start, roll, pos);
+                    assert!(
+                        pos < LAST_SQUARE,
+                        "bounce from {} with {} reached {}",
+                        start,
+                        roll,
+                        pos
+                    );
                 }
             }
         }
