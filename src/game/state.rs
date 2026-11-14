@@ -2,7 +2,7 @@
 // Game State
 // ============================================
 
-use super::board::{Board, LAST_SQUARE};
+use super::board::Board;
 use super::rules::{Dice, MoveResult, take_turn};
 
 pub const MIN_PLAYERS: usize = 2;
@@ -144,7 +144,7 @@ mod tests {
     #[test]
     fn game_stops_rolling_once_won() {
         let mut g = Game::new(2).unwrap();
-        g.players[0].position = LAST_SQUARE;
+        g.players[0].position = crate::game::board::LAST_SQUARE;
         g.winner = Some(0);
         let t = g.turn;
         g.roll(&mut Fixed(1));
