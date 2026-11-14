@@ -67,23 +67,16 @@ impl Game {
         let line = match result {
             MoveResult::Won => format!("{} reached the Star!", who),
             MoveResult::Bounced(_) => format!("{} bounced back to {}.", who, to),
-            MoveResult::Landed(_) if to > from => {
-                if self.board.resolve(to).is_some() && to > from {
-                    format!("{} got a boost to {}!", who, to)
-                } else {
-                    format!("{} moved to {}.", who, to)
-                }
-            }
-            MoveResult::Landed(_) => format!("{} fell back to {}.", who, to),
+            MoveResult::Boosted(_) => format!("{} caught a rocket to {}!", who, to),
+            MoveResult::Dragged(_) => format!("{} fell into a black hole, down to {}.", who, to),
+            MoveResult::Landed(_) => format!("{} moved to {}.", who, to),
         };
         self.push_log(line);
 
         match result {
             MoveResult::Won => {
                 self.winner = Some(self.turn);
-                if self.players[self.turn].position == LAST_SQUARE {
-                    self.push_log(format!("{} wins!", self.players[self.turn].name));
-                }
+                self.push_log(format!("{} wins!", self.players[self.turn].name));
             }
             _ => self.turn = (self.turn + 1) % self.players.len(),
         }
@@ -166,6 +159,41 @@ mod tests {
         let result = g.roll(&mut Fixed(3));
         assert_eq!(result, MoveResult::Won);
         assert_eq!(g.winner, Some(0));
+    }
+
+    #[test]
+    fn the_log_names_what_actually_happened() {
+        let mut g = Game::new(2).unwrap();
+        let (rocket_from, _) = g.board.rockets[0];
+        g.players[0].position = rocket_from - 1;
+        let r = g.roll(&mut Fixed(1));
+        assert!(matches!(r, MoveResult::Boosted(_)));
+        assert!(
+            g.log.last().unwrap().contains("rocket"),
+            "log said: {:?}",
+            g.log
+        );
+
+        let (hole_from, _) = g.board.black_holes[0];
+        g.players[1].position = hole_from - 1;
+        let r = g.roll(&mut Fixed(1));
+        assert!(matches!(r, MoveResult::Dragged(_)));
+        assert!(
+            g.log.last().unwrap().contains("black hole"),
+            "log said: {:?}",
+            g.log
+        );
+    }
+
+    #[test]
+    fn a_bounce_is_not_described_as_a_boost() {
+        let mut g = Game::new(2).unwrap();
+        g.players[0].position = 99;
+        let r = g.roll(&mut Fixed(2));
+        assert_eq!(r, MoveResult::Bounced(99));
+        let line = g.log.last().unwrap();
+        assert!(line.contains("bounced"), "log said: {:?}", line);
+        assert!(!line.contains("rocket"), "log said: {:?}", line);
     }
 
     #[test]

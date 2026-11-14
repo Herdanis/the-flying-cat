@@ -11,6 +11,8 @@ pub trait Dice {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MoveResult {
     Landed(u8),
+    Boosted(u8),
+    Dragged(u8),
     Bounced(u8),
     Won,
 }
@@ -36,8 +38,10 @@ pub fn apply_move(board: &Board, from: u8, roll: u8) -> (u8, MoveResult) {
         Some(dest) => {
             if dest == LAST_SQUARE {
                 (dest, MoveResult::Won)
+            } else if dest > target {
+                (dest, MoveResult::Boosted(dest))
             } else {
-                (dest, MoveResult::Landed(dest))
+                (dest, MoveResult::Dragged(dest))
             }
         }
         None => (target, MoveResult::Landed(target)),
@@ -123,8 +127,28 @@ mod tests {
     fn black_hole_drags_after_a_normal_move() {
         let b = Board::new();
         let (from, to) = b.black_holes[0];
-        let (pos, _) = take_turn(&b, from - 1, &mut Fixed(1));
+        let (pos, result) = take_turn(&b, from - 1, &mut Fixed(1));
         assert_eq!(pos, to);
+        assert_eq!(result, MoveResult::Dragged(to));
+    }
+
+    #[test]
+    fn a_rocket_reports_boosted_and_a_black_hole_reports_dragged() {
+        let b = Board::new();
+        let (rocket_from, rocket_to) = b.rockets[0];
+        let (_, r) = take_turn(&b, rocket_from - 1, &mut Fixed(1));
+        assert_eq!(r, MoveResult::Boosted(rocket_to));
+
+        let (hole_from, hole_to) = b.black_holes[0];
+        let (_, r) = take_turn(&b, hole_from - 1, &mut Fixed(1));
+        assert_eq!(r, MoveResult::Dragged(hole_to));
+    }
+
+    #[test]
+    fn a_plain_move_reports_landed() {
+        let b = Board::new();
+        let (_, r) = take_turn(&b, 1, &mut Fixed(5));
+        assert_eq!(r, MoveResult::Landed(6));
     }
 
     #[test]

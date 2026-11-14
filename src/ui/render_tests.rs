@@ -132,3 +132,26 @@ fn random_games_always_finish() {
         }
     }
 }
+
+// The gutter holds leg names and must never be written over by a square.
+#[test]
+fn leg_labels_never_collide_with_the_board() {
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    let mut terminal = Terminal::new(TestBackend::new(80, 24)).unwrap();
+    let game = Game::new(2).unwrap();
+    terminal
+        .draw(|f| render(f, &game, None, false, false))
+        .unwrap();
+
+    let buf = terminal.backend().buffer();
+    // Column GUTTER-1 is the spacer between a leg name and the first square,
+    // so it stays blank on every row the board itself occupies.
+    let spacer = super::render::GUTTER - 1;
+    let (board_area, _) = crate::ui::layout::split(ratatui::layout::Rect::new(0, 0, 80, 24));
+    for y in board_area.y..board_area.y + board_area.height {
+        let cell = buf.cell((spacer, y)).map(|c| c.symbol()).unwrap_or(" ");
+        assert_eq!(cell, " ", "gutter spacer overwritten on row {}", y);
+    }
+}

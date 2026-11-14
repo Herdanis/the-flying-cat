@@ -48,6 +48,11 @@ pub fn render_moving(
     if help {
         render_help(f, area);
     }
+    // A winning roll sets the winner before its animation runs, so the banner
+    // has to be drawn here as well or it would appear a frame late.
+    if let Some(winner) = game.winner {
+        render_winner(f, area, &game.players[winner].name, winner);
+    }
 }
 
 fn render_board_moving(f: &mut Frame, area: Rect, game: &Game, player: usize, at: u8, ascii: bool) {
@@ -61,7 +66,8 @@ fn render_board_moving(f: &mut Frame, area: Rect, game: &Game, player: usize, at
     render_leg_labels(buf, gutter, board_area, &game.board);
 
     for square in 1..=LAST_SQUARE {
-        let (x, y) = square_to_cell(board_area, square);
+        let (rx, y) = square_to_cell(board_area, square);
+        let x = board_area.x + rx;
         if x >= board_area.x + board_area.width
             || y < board_area.y
             || y >= board_area.y + board_area.height
@@ -94,7 +100,8 @@ pub fn render_board(f: &mut Frame, area: Rect, game: &Game, ascii: bool) {
     render_leg_labels(buf, gutter, board_area, &game.board);
 
     for square in 1..=LAST_SQUARE {
-        let (x, y) = square_to_cell(board_area, square);
+        let (rx, y) = square_to_cell(board_area, square);
+        let x = board_area.x + rx;
         if x >= board_area.x + board_area.width
             || y < board_area.y
             || y >= board_area.y + board_area.height
@@ -110,7 +117,7 @@ pub fn render_board(f: &mut Frame, area: Rect, game: &Game, ascii: bool) {
 
 // Two columns down the left edge hold leg names, so a label never lands on a
 // square. The board itself is drawn in the space that remains.
-const GUTTER: u16 = 2;
+pub const GUTTER: u16 = 5;
 
 fn reserve_gutter(area: Rect) -> (Rect, Rect) {
     let g = GUTTER.min(area.width.saturating_sub(1));
@@ -146,8 +153,11 @@ fn render_leg_labels(
         if y < gutter.y || y >= gutter.y + gutter.height {
             continue;
         }
-        let initial: String = board.leg_name(first_square).chars().take(1).collect();
-        buf.set_string(gutter.x, y, &initial, Style::default().fg(theme::DIM));
+        // Leave one column of air before the board, and keep enough
+        // characters that the ten legs stay distinguishable.
+        let room = gutter.width.saturating_sub(1) as usize;
+        let short: String = board.leg_name(first_square).chars().take(room).collect();
+        buf.set_string(gutter.x, y, &short, Style::default().fg(theme::DIM));
     }
 }
 
@@ -205,12 +215,9 @@ fn draw_cell(
     };
 
     let width = text.chars().count() as u16;
-    let pad = pitch.saturating_sub(width) / 2;
-    let x = if pad > 0 && x + pad < area.x + area.width {
-        x + pad
-    } else {
-        x
-    };
+    let right = (area.x + area.width).saturating_sub(width);
+    let centre = x + pitch.saturating_sub(width) / 2;
+    let x = centre.min(right).max(x);
     buf.set_string(x, y, &text, style);
 }
 

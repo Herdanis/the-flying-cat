@@ -34,6 +34,16 @@ impl Dice for StdDice {
     }
 }
 
+// The squares a token is shown on during one move: where it already is,
+// then every square along the way. Never empty, so the token is drawn at a
+// real square on every frame.
+pub fn animation_path(from: u8, to: u8) -> Vec<u8> {
+    let mut path = vec![from];
+    path.extend(steps(from, to));
+    path.dedup();
+    path
+}
+
 pub fn steps(from: u8, to: u8) -> Vec<u8> {
     match from.cmp(&to) {
         std::cmp::Ordering::Less => ((from + 1)..=to).collect(),
@@ -184,24 +194,20 @@ pub fn run(opts: Options) -> io::Result<()> {
                     Phase::Animating { path, at, .. } => *at = path.len().saturating_sub(1),
                     Phase::Idle if game.winner.is_none() => {
                         let player = game.turn;
+                        // Positions are 0 while a dino waits on Earth, but it
+                        // is drawn on square 1. Animate from where the child
+                        // last saw it, so the first roll does not teleport.
                         let before = game.players[player].position.max(1);
                         let roll = dice.roll();
                         last_roll = Some(roll);
                         game.roll(&mut FixedDice(roll));
                         let after = game.players[player].position.max(1);
-                        let path = if after == before {
-                            vec![after]
-                        } else {
-                            steps(before, after)
-                        };
-                        phase = if path.is_empty() {
-                            Phase::Idle
-                        } else {
-                            Phase::Animating {
-                                player,
-                                path,
-                                at: 0,
-                            }
+
+                        let path = animation_path(before, after);
+                        phase = Phase::Animating {
+                            player,
+                            path,
+                            at: 0,
                         };
                     }
                     _ => {}
@@ -257,6 +263,22 @@ mod tests {
     #[test]
     fn steps_walk_backward_for_a_black_hole() {
         assert_eq!(steps(40, 37), vec![39, 38, 37]);
+    }
+
+    #[test]
+    fn animation_always_starts_on_the_current_square() {
+        assert_eq!(animation_path(1, 3), vec![1, 2, 3]);
+        assert_eq!(animation_path(99, 99), vec![99]);
+        assert_eq!(animation_path(40, 37), vec![40, 39, 38, 37]);
+    }
+
+    #[test]
+    fn animation_path_is_never_empty() {
+        for from in 1..=100u8 {
+            for to in 1..=100u8 {
+                assert!(!animation_path(from, to).is_empty());
+            }
+        }
     }
 
     #[test]
