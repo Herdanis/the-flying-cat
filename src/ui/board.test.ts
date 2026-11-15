@@ -90,17 +90,27 @@ test('a badge on a square the plan dropped is pruned', () => {
 
 test('trap marks take a share of the cell but keep a phone floor', () => {
   expect(markSize(30, MARK.hole, false)).toBe(18);
-  expect(markSize(30, MARK.holeDrop, false)).toBe(18);
+  expect(markSize(30, MARK.holeDrop, false)).toBe(13);
   expect(markSize(30, MARK.pad, false)).toBe(16);
   expect(markSize(30, MARK.ship, false)).toBe(14);
   expect(markSize(30, MARK.landed, false)).toBe(14);
   expect(markSize(30, MARK.dust, false)).toBe(10);
-  expect(markSize(100, MARK.hole, true)).toBeCloseTo(62, 6);
-  expect(markSize(100, MARK.holeDrop, true)).toBeCloseTo(50, 6);
+  expect(markSize(100, MARK.hole, true)).toBeCloseTo(58, 6);
+  expect(markSize(100, MARK.holeDrop, true)).toBeCloseTo(46, 6);
   expect(markSize(100, MARK.pad, false)).toBeCloseTo(47.6, 6);
   expect(markSize(100, MARK.ship, true)).toBeCloseTo(48, 6);
   expect(markSize(100, MARK.landed, true)).toBeCloseTo(42, 6);
   expect(markSize(100, MARK.dust, true)).toBeCloseTo(32, 6);
+});
+
+test('the hole you fall into stays bigger than the one you come out of', () => {
+  for (const cell of [30, 72, 101.8]) {
+    for (const live of [true, false]) {
+      const source = markSize(cell, MARK.hole, live);
+      const dest = markSize(cell, MARK.holeDrop, live);
+      expect(source - dest).toBeGreaterThanOrEqual(4);
+    }
+  }
 });
 
 test('trap marks share one shifted centre and stay inside the tile', () => {

@@ -26,7 +26,7 @@ const MOCK_CELL = 54;
 // Room the token's ring takes outside its disc.
 const RING = 2;
 // The link layer drops this share of a cell so its marks clear the number.
-export const LINK_DROP = 0.1;
+export const LINK_DROP = 0.14;
 
 export interface MarkSize {
   frac: number;
@@ -34,9 +34,10 @@ export interface MarkSize {
 }
 
 // Trap marks: a share of the cell, never under the floor a phone can show.
+// Both holes share a look but not a floor: the one you fall into stays bigger.
 export const MARK = {
-  hole: { frac: 0.62, floor: 18 },
-  holeDrop: { frac: 0.5, floor: 18 },
+  hole: { frac: 0.58, floor: 18 },
+  holeDrop: { frac: 0.46, floor: 13 },
   pad: { frac: 0.56, floor: 16 },
   ship: { frac: 0.48, floor: 14 },
   landed: { frac: 0.42, floor: 14 },
