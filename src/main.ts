@@ -6,14 +6,21 @@ import './styles.css';
 import { LAST_SQUARE } from './game/board';
 import type { MoveResult } from './game/rules';
 import { Game } from './game/state';
-import { displaySquare, createBoard } from './ui/board';
+import { displaySquare, createBoard, type BoardView } from './ui/board';
 import { createDice } from './ui/dice';
-import { el, mount, playerColors, prefersReducedMotion } from './ui/layout';
+import { el, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
 import { animateMove, movePath } from './ui/motion';
 import { showStart } from './ui/start';
 
 const DINO = '\u{1F996}';
 const reduced = prefersReducedMotion();
+
+let live: { board: BoardView; game: Game } | null = null;
+
+function remeasure(): void {
+  if (!live || !live.board.el.isConnected) return;
+  live.board.reflow(live.game);
+}
 
 function pathFor(from: number, result: MoveResult): number[] {
   if (result.kind === 'bounced') {
@@ -41,6 +48,7 @@ function startGame(count: number): void {
   const screen = el('div', 'screen game-screen');
   screen.append(board.el, side);
   mount(screen);
+  live = { board, game };
 
   let animating = false;
   let skip = false;
@@ -115,11 +123,15 @@ function startGame(count: number): void {
 }
 
 function startPicker(): void {
+  live = null;
   mount(showStart((count) => startGame(count)));
 }
 
 function boot(): void {
   startPicker();
+
+  onViewportChange(remeasure);
+  if (document.fonts) void document.fonts.ready.then(remeasure);
 
   addEventListener('keydown', (event) => {
     if (event.key !== ' ') return;
