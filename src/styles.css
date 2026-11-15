@@ -154,7 +154,7 @@ button {
 .start-btn {
   min-height: var(--tap);
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   padding: 8px 14px;
   border-radius: 14px;
@@ -343,6 +343,11 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* The crowd chip shares the top edge, so a three-digit number narrows. */
+.cell.crowded .cell-num {
+  font-size: max(6px, calc(var(--cell) * 0.2));
+}
+
 .cell-mark {
   position: relative;
   display: block;
@@ -449,11 +454,11 @@ button {
   top: 0;
   left: 0;
   z-index: 1;
-  padding: 0 calc(var(--cell) * 0.07);
+  padding: 0 calc(var(--cell) * 0.05);
   border-radius: 999px;
   background: rgba(5, 9, 28, 0.82);
-  font-size: max(6px, calc(var(--cell) * 0.22));
-  line-height: 1.35;
+  font-size: max(6px, calc(var(--cell) * 0.2));
+  line-height: 1.2;
   color: var(--ink);
   white-space: nowrap;
 }

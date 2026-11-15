@@ -24,7 +24,7 @@ const SEAT = {
   current: { x: 0.55, y: 0.68, size: 0.62 } satisfies Seat,
   other: { x: 0.5, y: 0.63, size: 0.52 } satisfies Seat,
   dot: { x: 0.63, y: 0.2, size: 0.15, step: 0.19 } satisfies Seat & { step: number },
-  chip: { x: 0.9, y: 0.9 },
+  chip: { x: 0.97, y: 0.03 },
 };
 
 export interface TokenPlan {
@@ -196,7 +196,7 @@ export function createBoard(): BoardView {
   function seatChip(badge: HTMLElement, square: number): void {
     const { x, y, size } = cellBox(square);
     badge.style.transform =
-      `translate(${x + size * SEAT.chip.x}px, ${y + size * SEAT.chip.y}px) translate(-100%, -100%)`;
+      `translate(${x + size * SEAT.chip.x}px, ${y + size * SEAT.chip.y}px) translate(-100%, 0)`;
   }
 
   function render(game: Game): void {
@@ -238,6 +238,10 @@ export function createBoard(): BoardView {
 
       place(i, square, true);
     });
+
+    for (const [square, cell] of cells) {
+      cell.classList.toggle('crowded', (plans.get(square)?.chip ?? 0) > 0);
+    }
 
     for (const [square, plan] of plans) {
       let badge = badges.get(square);
