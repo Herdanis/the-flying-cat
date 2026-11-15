@@ -65,10 +65,11 @@ only code that turns a key into a path. A missing file leaves a gap; it never
 breaks the screen.
 
 Each square paints its leg's ground picture — `grounds/mars.svg` across squares
-41 to 50 — and keeps its number in that leg's ink. The links are one SVG layer
-above the squares and below the dinos: `linkPath` curves between two square
-centres, `ribbonPath` tapers it from pad to pad, and the link the last move used
-carries `data-live="true"` and draws at full strength while the rest sit back.
+41 to 50 — and keeps its number in that leg's ink, above the link layer so a
+trail never covers a digit. The links are one SVG layer above the squares and
+below the dinos: `linkPath` curves between two square centres, `ribbonPath`
+tapers it from pad to pad, and the link the last move used carries
+`data-live="true"` and draws at full strength while the rest sit back.
 
 The dinosaurs ride a white disc ringed in their species colour, in an overlay
 layer above the grid, and move with `transform`. That is what lets the current

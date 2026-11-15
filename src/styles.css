@@ -157,7 +157,7 @@ button {
   top: -9vmin;
   right: -7vmin;
   width: 40vmin;
-  opacity: 0.42;
+  opacity: 0.8;
 }
 
 .sky-moon {
@@ -191,6 +191,10 @@ button {
 @media (max-width: 519px) {
   .sky-object {
     display: none;
+  }
+
+  .sky-sun {
+    display: block;
   }
 }
 
@@ -389,17 +393,19 @@ button {
 
 .cell-num {
   position: absolute;
-  top: calc(var(--cell) * 0.06);
-  left: calc(var(--cell) * 0.08);
+  /* 12% of the cell clears the tile's 5% padding and its rounded corner. */
+  top: calc(var(--cell) * 0.12);
+  left: calc(var(--cell) * 0.12);
+  z-index: 2;
   font-size: max(7px, calc(var(--cell) * 0.25));
   font-weight: 700;
   line-height: 1;
   color: var(--num);
   text-shadow:
-    0.5px 0 var(--halo),
-    -0.5px 0 var(--halo),
-    0 0.5px var(--halo),
-    0 -0.5px var(--halo);
+    1px 0 var(--halo),
+    -1px 0 var(--halo),
+    0 1px var(--halo),
+    0 -1px var(--halo);
   font-variant-numeric: tabular-nums;
 }
 
@@ -435,6 +441,7 @@ button {
 
 .links {
   position: relative;
+  z-index: 1;
   grid-column: 2 / -1;
   grid-row: 1 / -1;
   width: 100%;
@@ -444,7 +451,7 @@ button {
 }
 
 .link {
-  opacity: 0.4;
+  opacity: 0.58;
 }
 
 .link[data-live='true'] {
@@ -459,6 +466,7 @@ button {
   grid-column: 2 / -1;
   grid-row: 1 / -1;
   position: relative;
+  z-index: 3;
   pointer-events: none;
 }
 

@@ -185,40 +185,38 @@ export function createBoard(traps: Board): BoardView {
       const path = svg('path');
       path.setAttribute('d', ribbonPath(geometry, start * k, end * k));
       path.setAttribute('fill', fill);
-      path.setAttribute('opacity', i === 0 ? '0.2' : '0.36');
+      path.setAttribute('opacity', i === 0 ? '0.3' : '0.9');
       return path;
     });
   }
 
   function drawRocket(from: number, to: number, cell: number, k: number): SVGGElement {
     const geometry = linkPath(from, to, cell, 0);
-    const scale = (cell / MOCK_CELL) * k;
     const start = squareCentre(from, cell, 0);
-    const padY = start.y + cell * 0.24;
-    const dropY = geometry.end.y + cell * 0.24;
+    const padY = start.y + cell * 0.24 * k;
+    const dropY = geometry.end.y + cell * 0.24 * k;
     const group = svg('g');
 
     group.append(
-      ...trail(geometry, [[5, 13], [3.4, 7.5]], '#7ee7a4', scale),
-      mark('launchPad', { x: start.x, y: padY }, cell * 0.44 * k),
-      mark('rocketShip', { x: start.x, y: padY - cell * 0.22 * k }, cell * 0.38 * k),
-      mark('landingPad', { x: geometry.end.x, y: dropY }, cell * 0.42 * k),
-      mark('rocketShip', { x: geometry.end.x, y: dropY - cell * 0.2 * k }, cell * 0.36 * k),
-      mark('dust', { x: geometry.end.x, y: dropY + cell * 0.08 * k }, cell * 0.3 * k),
+      ...trail(geometry, [[5, 13], [3.4, 7.5]], '#7ee7a4', (cell / MOCK_CELL) * k),
+      mark('launchPad', { x: start.x, y: padY }, cell * 0.34 * k),
+      mark('rocketShip', { x: start.x, y: start.y + cell * 0.16 * k }, cell * 0.3 * k),
+      mark('landingPad', { x: geometry.end.x, y: dropY }, cell * 0.34 * k),
+      mark('rocketShip', { x: geometry.end.x, y: geometry.end.y + cell * 0.16 * k }, cell * 0.28 * k),
+      mark('dust', { x: geometry.end.x, y: geometry.end.y + cell * 0.3 * k }, cell * 0.24 * k),
     );
     return group;
   }
 
   function drawHole(from: number, to: number, cell: number, k: number): SVGGElement {
     const geometry = linkPath(from, to, cell, 0);
-    const scale = (cell / MOCK_CELL) * k;
     const start = squareCentre(from, cell, 0);
     const group = svg('g');
 
     group.append(
-      ...trail(geometry, [[22, 5], [13, 3]], '#c9a6ff', scale),
-      mark('hole', { x: start.x, y: start.y + cell * 0.18 * k }, cell * 0.5 * k),
-      mark('hole', { x: geometry.end.x, y: geometry.end.y + cell * 0.18 * k }, cell * 0.38 * k),
+      ...trail(geometry, [[22, 5], [13, 3]], '#c9a6ff', (cell / MOCK_CELL) * k),
+      mark('hole', { x: start.x, y: start.y + cell * 0.2 * k }, cell * 0.42 * k),
+      mark('hole', { x: geometry.end.x, y: geometry.end.y + cell * 0.24 * k }, cell * 0.32 * k),
     );
     return group;
   }
@@ -233,8 +231,8 @@ export function createBoard(traps: Board): BoardView {
     const draw = (kind: 'rocket' | 'hole', from: number, to: number): void => {
       const on = live?.from === from && live.to === to;
       const group = kind === 'rocket'
-        ? drawRocket(from, to, cell, on ? 1 : 0.74)
-        : drawHole(from, to, cell, on ? 1 : 0.74);
+        ? drawRocket(from, to, cell, on ? 1 : 0.85)
+        : drawHole(from, to, cell, on ? 1 : 0.85);
       group.setAttribute('class', 'link');
       group.dataset.live = String(on);
       group.dataset.from = String(from);
