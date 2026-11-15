@@ -2,7 +2,8 @@
 // Move Rules
 // ============================================
 
-import { LAST_SQUARE, resolve } from './board';
+import { LAST_SQUARE } from './board';
+import type { Board } from './randomBoard';
 
 export type MoveResult =
   | { kind: 'landed' | 'boosted' | 'dragged' | 'bounced'; at: number }
@@ -10,7 +11,7 @@ export type MoveResult =
 
 export type Dice = () => number;
 
-export function applyMove(from: number, roll: number): MoveResult {
+export function applyMove(board: Board, from: number, roll: number): MoveResult {
   const target = from + roll;
 
   if (target > LAST_SQUARE) {
@@ -20,7 +21,7 @@ export function applyMove(from: number, roll: number): MoveResult {
 
   if (target === LAST_SQUARE) return { kind: 'won', at: LAST_SQUARE };
 
-  const dest = resolve(target);
+  const dest = board.resolve(target);
   if (dest === undefined) return { kind: 'landed', at: target };
   if (dest === LAST_SQUARE) return { kind: 'won', at: dest };
   return dest > target ? { kind: 'boosted', at: dest } : { kind: 'dragged', at: dest };

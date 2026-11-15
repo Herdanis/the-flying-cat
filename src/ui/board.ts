@@ -2,7 +2,8 @@
 // Board View
 // ============================================
 
-import { BLACK_HOLES, LAST_SQUARE, LEGS, ROCKETS } from '../game/board';
+import { LAST_SQUARE, LEGS } from '../game/board';
+import type { Board } from '../game/randomBoard';
 import type { Game } from '../game/state';
 import { hole, rocket, star } from './icons';
 import { el } from './layout';
@@ -82,13 +83,13 @@ export function dirToNext(square: number): TrackDir | null {
   return leg % 2 === 0 ? 'right' : 'left';
 }
 
-export function createBoard(): BoardView {
+export function createBoard(traps: Board): BoardView {
   const board = el('div', 'board');
   board.setAttribute('role', 'img');
   board.setAttribute('aria-label', `Board of ${LAST_SQUARE} squares from Earth to Star`);
 
-  const rocketAt = new Set(ROCKETS.map(([from]) => from));
-  const holeAt = new Set(BLACK_HOLES.map(([from]) => from));
+  const rocketAt = new Set(traps.rockets.map(([from]) => from));
+  const holeAt = new Set(traps.holes.map(([from]) => from));
   const cells = new Map<number, HTMLElement>();
 
   for (let square = 1; square <= LAST_SQUARE; square++) {

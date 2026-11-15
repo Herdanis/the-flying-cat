@@ -2,7 +2,9 @@
 // Game State
 // ============================================
 
+import { makeBoard, type Board } from './randomBoard';
 import { applyMove, type Dice, type MoveResult } from './rules';
+import { SPECIES } from './species';
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 6;
@@ -15,20 +17,24 @@ export interface Player {
   position: number;
 }
 
+const newSeed = (): number => Math.random() * 2 ** 32;
+
 export class Game {
   players: Player[];
+  board: Board;
   turn = 0;
   winner: number | null = null;
   log: string[] = [];
 
-  constructor(count: number) {
+  constructor(count: number, seed = newSeed()) {
     if (!Number.isInteger(count) || count < MIN_PLAYERS || count > MAX_PLAYERS) {
       throw new RangeError(
         `players must be between ${MIN_PLAYERS} and ${MAX_PLAYERS}, got ${count}`,
       );
     }
+    this.board = makeBoard(seed);
     this.players = Array.from({ length: count }, (_, i) => ({
-      name: `Dino ${i + 1}`,
+      name: SPECIES[i].name,
       colorIndex: i,
       position: 0,
     }));
@@ -44,7 +50,7 @@ export class Game {
     }
 
     const face = Math.min(Math.max(Math.trunc(dice()), 1), 6);
-    const result = applyMove(this.players[this.turn].position, face);
+    const result = applyMove(this.board, this.players[this.turn].position, face);
     this.players[this.turn].position = result.at;
 
     const who = this.players[this.turn].name;
@@ -60,6 +66,7 @@ export class Game {
   }
 
   reset(): void {
+    this.board = makeBoard(newSeed());
     for (const p of this.players) p.position = 0;
     this.winner = null;
     this.log = [];

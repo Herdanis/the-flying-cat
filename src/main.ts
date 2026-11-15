@@ -57,7 +57,7 @@ function pathFor(from: number, result: MoveResult): number[] {
 
 function startGame(count: number): void {
   const game = new Game(count);
-  const board = createBoard();
+  const board = createBoard(game.board);
   const colors = playerColors();
   const dice = createDice(() => void roll());
 
@@ -136,8 +136,7 @@ function startGame(count: number): void {
     again.type = 'button';
     again.addEventListener('click', () => {
       banner.remove();
-      game.reset();
-      paint();
+      startGame(game.players.length);
     });
 
     const alt = el('button', 'banner-alt', 'change players');
