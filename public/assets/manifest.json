@@ -1,0 +1,39 @@
+{
+  "dinos": {
+    "rex": "assets/dinos/rex.svg",
+    "stego": "assets/dinos/stego.svg",
+    "trike": "assets/dinos/trike.svg",
+    "long": "assets/dinos/long.svg",
+    "ptero": "assets/dinos/ptero.svg",
+    "anky": "assets/dinos/anky.svg"
+  },
+  "grounds": {
+    "earth": "assets/grounds/earth.svg",
+    "orbit": "assets/grounds/orbit.svg",
+    "moon": "assets/grounds/moon.svg",
+    "belt": "assets/grounds/belt.svg",
+    "mars": "assets/grounds/mars.svg",
+    "jupiter": "assets/grounds/jupiter.svg",
+    "saturn": "assets/grounds/saturn.svg",
+    "neptune": "assets/grounds/neptune.svg",
+    "deep": "assets/grounds/deep.svg",
+    "star": "assets/grounds/star.svg"
+  },
+  "sky": {
+    "sun": "assets/sky/sun.svg",
+    "moon": "assets/sky/moon.svg",
+    "planet": "assets/sky/planet.svg",
+    "satellite": "assets/sky/satellite.svg",
+    "comet": "assets/sky/comet.svg",
+    "nebulaA": "assets/sky/nebulaA.svg",
+    "nebulaB": "assets/sky/nebulaB.svg"
+  },
+  "marks": {
+    "rocketShip": "assets/marks/rocketShip.svg",
+    "launchPad": "assets/marks/launchPad.svg",
+    "landingPad": "assets/marks/landingPad.svg",
+    "dust": "assets/marks/dust.svg",
+    "hole": "assets/marks/hole.svg",
+    "star": "assets/marks/star.svg"
+  }
+}

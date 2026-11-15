@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -40 200 80" width="200" height="80">
+<defs>
+<radialGradient id="cometTail" cx="100%" cy="50%" r="100%">
+<stop offset="0%" stop-color="#ffffff" stop-opacity=".9"/>
+<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<g transform="rotate(-16)">
+<rect x="-90" y="-5" width="150" height="10" rx="5" fill="url(#cometTail)"/>
+<circle cx="66" cy="0" r="7" fill="#ffffff" opacity=".85"/>
+</g>
+</svg>

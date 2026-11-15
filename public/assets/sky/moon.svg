@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-30 -30 60 60" width="60" height="60">
+<defs>
+<radialGradient id="moonBody" cx="35%" cy="30%" r="80%">
+<stop offset="0%" stop-color="#c9cee0"/>
+<stop offset="100%" stop-color="#6d748f"/>
+</radialGradient>
+</defs>
+<circle r="24" fill="url(#moonBody)"/>
+<circle cx="-7" cy="-6" r="5" fill="#8b93ad" opacity=".8"/>
+<circle cx="8" cy="7" r="3.4" fill="#8b93ad" opacity=".7"/>
+<circle cx="4" cy="-11" r="2.4" fill="#9aa2bd" opacity=".7"/>
+</svg>
