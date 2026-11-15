@@ -60,7 +60,7 @@ export function makeBoard(seed: number, perKind = 9): Board {
     }
 
     // Bounded: sweep the shortest legal hop before giving up.
-    for (let hop = MIN_HOP; hop <= LAST; hop++) {
+    for (let hop = MIN_HOP; hop <= MAX_HOP; hop++) {
       for (let from = FIRST; from <= LAST; from++) {
         const to = up ? from + hop : from - hop;
         if (to < FIRST || to > LAST) continue;

@@ -9,10 +9,10 @@ export interface Species {
 }
 
 export const SPECIES: Species[] = [
-  { key: 'rex', name: 'Rex', colour: '#e2703a' },
-  { key: 'stego', name: 'Stego', colour: '#4f9d69' },
-  { key: 'trike', name: 'Trike', colour: '#8a7cf0' },
-  { key: 'long', name: 'Long', colour: '#4a9fd8' },
-  { key: 'ptero', name: 'Ptero', colour: '#d96ba0' },
-  { key: 'anky', name: 'Anky', colour: '#d4a72c' },
+  { key: 'rex', name: 'Rex', colour: '#ff6b5a' },
+  { key: 'stego', name: 'Stego', colour: '#4fb0ff' },
+  { key: 'trike', name: 'Trike', colour: '#f5b21a' },
+  { key: 'long', name: 'Long', colour: '#3fbf6f' },
+  { key: 'ptero', name: 'Ptero', colour: '#9b6bff' },
+  { key: 'anky', name: 'Anky', colour: '#ff8a3d' },
 ];
