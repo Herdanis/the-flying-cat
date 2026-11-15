@@ -4,6 +4,7 @@
 
 export interface LinkGeometry {
   d: string;
+  start: { x: number; y: number };
   end: { x: number; y: number };
 }
 
@@ -44,7 +45,11 @@ export function linkPath(from: number, to: number, cell: number, gap: number): L
   };
   const tip = { x: round(end.x), y: round(end.y) };
 
-  return { d: `M${round(start.x)} ${round(start.y)} Q${control.x} ${control.y} ${tip.x} ${tip.y}`, end: tip };
+  return {
+    d: `M${round(start.x)} ${round(start.y)} Q${control.x} ${control.y} ${tip.x} ${tip.y}`,
+    start: { x: round(start.x), y: round(start.y) },
+    end: tip,
+  };
 }
 
 function curve(geometry: LinkGeometry): { a: Point; c: Point; b: Point } {

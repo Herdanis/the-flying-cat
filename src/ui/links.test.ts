@@ -38,6 +38,20 @@ test('a link starts at one square centre and ends at the other', () => {
   }
 });
 
+test('a link reports the very points it is drawn from', () => {
+  for (const from of [1, 12, 44, 100]) {
+    for (const to of [1, 37, 63, 100]) {
+      if (from === to) continue;
+      const geometry = linkPath(from, to, CELL, GAP);
+      const n = numbers(geometry.d);
+      expect(geometry.start).toEqual(squareCentre(from, CELL, GAP));
+      expect(geometry.end).toEqual(squareCentre(to, CELL, GAP));
+      expect([n[0], n[1]]).toEqual([geometry.start.x, geometry.start.y]);
+      expect(n.slice(-2)).toEqual([geometry.end.x, geometry.end.y]);
+    }
+  }
+});
+
 test('squareCentre walks the serpentine from the bottom left', () => {
   expect(squareCentre(1, CELL, GAP)).toEqual({ x: CELL / 2, y: SIDE - CELL / 2 });
   expect(squareCentre(10, CELL, GAP)).toEqual({ x: SIDE - CELL / 2, y: SIDE - CELL / 2 });
