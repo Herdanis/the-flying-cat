@@ -49,6 +49,12 @@ export function squarePlan(group: number[], current: number, tilePx: number): Sq
   return { dots, gone: others - dots, chip };
 }
 
+/** Badged squares the current plan no longer wants. */
+export function badgesToDrop(have: Iterable<number>, want: Iterable<number>): number[] {
+  const keep = new Set(want);
+  return [...have].filter((square) => !keep.has(square));
+}
+
 export interface BoardView {
   el: HTMLElement;
   render(game: Game): void;
@@ -210,9 +216,8 @@ export function createBoard(): BoardView {
       plans.set(square, squarePlan(group, current, cellBox(square).size));
     }
 
-    for (const [square, badge] of badges) {
-      if (plans.has(square)) continue;
-      badge.remove();
+    for (const square of badgesToDrop(badges.keys(), plans.keys())) {
+      badges.get(square)?.remove();
       badges.delete(square);
     }
 

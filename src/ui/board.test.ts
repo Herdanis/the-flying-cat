@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { dirToNext, squarePlan, tokenPlan } from './board';
+import { dirToNext, badgesToDrop, squarePlan, tokenPlan } from './board';
 
 test('the track turns the way the snakes-and-ladders route does', () => {
   expect(dirToNext(1)).toBe('right');
@@ -38,4 +38,10 @@ test('the dot threshold sits between 43 and 44px', () => {
 test('the current player is never counted as crowd', () => {
   expect(squarePlan([0, 1], 0, 72)).toEqual({ dots: 1, gone: 0, chip: 0 });
   expect(squarePlan([0, 1, 2, 3], 0, 30)).toEqual({ dots: 0, gone: 3, chip: 3 });
+});
+
+test('a badge on a square the plan dropped is pruned', () => {
+  expect(badgesToDrop([1, 5], [5])).toEqual([1]);
+  expect(badgesToDrop([5], [5])).toEqual([]);
+  expect(badgesToDrop([], [5])).toEqual([]);
 });
