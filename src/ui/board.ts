@@ -10,7 +10,33 @@ import { el } from './layout';
 export type TrackDir = 'right' | 'left' | 'up';
 
 const DINO = '\u{1F996}';
-const DOTS_FIT = 3;
+const DOT_MIN_TILE = 44;
+const DOT_MAX = 2;
+
+// Token centres, sizes and the chip corner, as a fraction of the cell.
+// 0.7 would clip the tile number, so the current token keeps the lower third.
+interface Seat {
+  x: number;
+  y: number;
+  size: number;
+}
+
+const SEAT = {
+  current: { x: 0.55, y: 0.68, size: 0.62 } satisfies Seat,
+  other: { x: 0.5, y: 0.63, size: 0.52 } satisfies Seat,
+  dot: { x: 0.63, y: 0.2, size: 0.15, step: 0.19 } satisfies Seat & { step: number },
+  chip: { x: 0.9, y: 0.9 },
+};
+
+export interface TokenPlan {
+  dots: number;
+  chip: number;
+}
+
+export function tokenPlan(count: number, tilePx: number): TokenPlan {
+  const dots = tilePx >= DOT_MIN_TILE ? Math.min(count, DOT_MAX) : 0;
+  return { dots, chip: count - dots };
+}
 
 export interface BoardView {
   el: HTMLElement;
@@ -104,32 +130,56 @@ export function createBoard(): BoardView {
     }
     while (tokens.length < count) {
       const token = el('div', 'token');
-      const at = el('div', 'at');
-      at.append(el('div', 'puck'), el('div', 'face', DINO));
-      token.append(at);
+      token.append(el('div', 'face', DINO));
       tokens.push(token);
       overlay.append(token);
     }
   }
 
-  function tokenRect(square: number): { x: number; y: number } {
+  function cellBox(square: number): { x: number; y: number; size: number } {
     const cell = cells.get(Math.min(Math.max(square, 1), LAST_SQUARE));
-    if (!cell) return { x: 0, y: 0 };
+    if (!cell) return { x: 0, y: 0, size: 0 };
     const c = cell.getBoundingClientRect();
     const o = overlay.getBoundingClientRect();
-    return { x: c.left - o.left, y: c.top - o.top };
+    return { x: c.left - o.left, y: c.top - o.top, size: c.width };
+  }
+
+  function tokenRect(square: number): { x: number; y: number } {
+    const { x, y } = cellBox(square);
+    return { x, y };
   }
 
   function place(playerIndex: number, square: number, instant = false): void {
     const token = tokens[playerIndex];
     if (!token) return;
-    const { x, y } = tokenRect(square);
+
+    const box = cellBox(square);
+    const board = overlay.getBoundingClientRect();
+    const slot = Number(token.dataset.slot ?? '0');
+    const seat = token.classList.contains('dot')
+      ? { ...SEAT.dot, x: SEAT.dot.x + slot * SEAT.dot.step }
+      : token.classList.contains('current')
+        ? SEAT.current
+        : SEAT.other;
+
+    const size = box.size * seat.size;
+    const half = size / 2;
+    const cx = Math.min(Math.max(box.x + box.size * seat.x, half), board.width - half);
+    const cy = Math.min(Math.max(box.y + box.size * seat.y, half), board.height - half);
+
+    token.style.setProperty('--tk', `${size}px`);
     if (instant) token.classList.add('no-anim');
-    token.style.transform = `translate(${x}px, ${y}px)`;
+    token.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
     if (instant) {
       void token.offsetWidth;
       token.classList.remove('no-anim');
     }
+  }
+
+  function seatChip(badge: HTMLElement, square: number): void {
+    const { x, y, size } = cellBox(square);
+    badge.style.transform =
+      `translate(${x + size * SEAT.chip.x}px, ${y + size * SEAT.chip.y}px) translate(-100%, -100%)`;
   }
 
   function render(game: Game): void {
@@ -144,61 +194,50 @@ export function createBoard(): BoardView {
     });
 
     const current = game.turn;
-    const needed = new Set<number>();
+    const plans = new Map<number, TokenPlan>();
+    for (const [square, group] of groups) {
+      const others = group.filter((i) => i !== current).length;
+      plans.set(square, tokenPlan(others, cellBox(square).size));
+    }
 
     game.players.forEach((player, i) => {
       const square = displaySquare(player.position);
       const group = groups.get(square) ?? [];
+      const plan = plans.get(square) ?? tokenPlan(0, 0);
       const token = tokens[i];
       const isCurrent = i === current;
-      const shared = group.length > 1;
+      const dot = !isCurrent && group.length > 1;
+      const slot = group.filter((n) => n !== current).indexOf(i);
 
       token.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
       token.classList.toggle('current', isCurrent);
-      token.classList.toggle('dot', !isCurrent && shared);
-
-      if (!isCurrent && shared) {
-        const others = group.filter((n) => n !== current);
-        const shown = others.length > DOTS_FIT ? DOTS_FIT - 1 : others.length;
-        const slot = others.indexOf(i);
-        token.classList.toggle('gone', slot >= shown);
-        token.style.setProperty('--i', String(slot));
-        if (others.length > DOTS_FIT) needed.add(square);
-      } else {
-        token.classList.remove('gone');
-      }
+      token.classList.toggle('dot', dot);
+      token.classList.toggle('gone', dot && slot >= plan.dots);
+      if (dot) token.dataset.slot = String(slot);
 
       place(i, square, true);
     });
 
-    for (const [square, badge] of badges) {
-      if (!needed.has(square)) {
-        badge.remove();
-        badges.delete(square);
-      }
-    }
-
-    for (const square of needed) {
-      const group = groups.get(square) ?? [];
-      const surplus = group.length - DOTS_FIT;
+    for (const [square, plan] of plans) {
       let badge = badges.get(square);
+      if (plan.chip === 0) {
+        badge?.remove();
+        badges.delete(square);
+        continue;
+      }
       if (!badge) {
         badge = el('div', 'more');
         badges.set(square, badge);
         overlay.append(badge);
       }
-      badge.textContent = `+${surplus}`;
-      const { x, y } = tokenRect(square);
-      badge.style.transform = `translate(${x}px, ${y}px)`;
+      badge.textContent = `+${plan.chip}`;
+      seatChip(badge, square);
     }
   }
 
   function reflow(game: Game): void {
     game.players.forEach((player, i) => place(i, displaySquare(player.position), true));
-    for (const [square, badge] of badges) {
-      const { x, y } = tokenRect(square);
-      badge.style.transform = `translate(${x}px, ${y}px)`;
-    }
+    for (const [square, badge] of badges) seatChip(badge, square);
   }
 
   return { el: board, render, tokenRect, place, reflow };
