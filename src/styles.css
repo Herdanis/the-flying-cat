@@ -23,9 +23,23 @@
 
   --tap: 48px;
   --gutter: min(5.5rem, 12vw);
-  --cell: min(calc((100vw - var(--gutter) - 8px) / 10), 8vh);
-  --cell: min(calc((100vw - var(--gutter) - 8px) / 10), 8dvh);
+  --screen-pad: 8px;
+  --gap: clamp(8px, 2vw, 22px);
+  --panel-w: 220px;
+  --panel-h: 200px; /* side panel plus the gap under the board in portrait */
+  --fit-w: calc((100vw - var(--gutter) - var(--panel-w) - var(--gap) - var(--screen-pad) * 2) / 10);
+  --fit-h: 8vh;
+  --fit-h: 8dvh;
+  --cell: min(var(--fit-w), var(--fit-h));
   --hop: 120ms;
+}
+
+@media (orientation: portrait) {
+  :root {
+    --fit-w: calc((100vw - var(--gutter) - var(--screen-pad) * 2) / 10);
+    --fit-h: calc((100vh - var(--panel-h) - var(--screen-pad) * 2) / 10);
+    --fit-h: calc((100dvh - var(--panel-h) - var(--screen-pad) * 2) / 10);
+  }
 }
 
 @media (max-width: 419px) {
@@ -77,9 +91,29 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(8px, 2vw, 22px);
-  padding: 8px;
+  gap: var(--gap);
+  padding: var(--screen-pad);
   flex-wrap: wrap;
+}
+
+.too-small {
+  display: none;
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+@media (max-width: 259px) {
+  body:has(.game-screen) #app {
+    display: none;
+  }
+
+  body:has(.game-screen) .too-small {
+    display: block;
+  }
 }
 
 /* ============================================
@@ -144,6 +178,7 @@ button {
 
 .game-screen {
   align-content: center;
+  flex-wrap: nowrap;
 }
 
 .side {
@@ -151,7 +186,26 @@ button {
   flex-direction: column;
   align-items: center;
   gap: clamp(8px, 1.6vmin, 16px);
-  width: min(220px, 100%);
+  width: min(var(--panel-w), 100%);
+}
+
+@media (orientation: portrait) {
+  .game-screen {
+    flex-direction: column;
+  }
+
+  .side {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      'turn mute'
+      'dice dice'
+      'log log';
+    justify-content: center;
+    align-items: center;
+    gap: 8px 12px;
+  }
 }
 
 .turn {
@@ -393,7 +447,7 @@ button {
    ============================================ */
 
 .dice {
-  width: min(26vmin, 120px);
+  width: clamp(96px, 26vmin, 120px);
   min-width: calc(var(--tap) + 12px);
   min-height: calc(var(--tap) + 12px);
   aspect-ratio: 1;
@@ -563,6 +617,29 @@ button {
 
 .mute[aria-pressed='true'] {
   color: var(--ink-faint);
+}
+
+/* ============================================
+   Portrait Stack
+   ============================================ */
+
+@media (orientation: portrait) {
+  .turn {
+    grid-area: turn;
+    justify-self: end;
+  }
+
+  .mute {
+    grid-area: mute;
+  }
+
+  .dice {
+    grid-area: dice;
+  }
+
+  .log {
+    grid-area: log;
+  }
 }
 
 /* ============================================
