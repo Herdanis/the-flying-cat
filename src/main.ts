@@ -3,6 +3,132 @@
 // ============================================
 
 import './styles.css';
-import { el, mount } from './ui/layout';
+import { LAST_SQUARE } from './game/board';
+import type { MoveResult } from './game/rules';
+import { Game } from './game/state';
+import { displaySquare, createBoard } from './ui/board';
+import { createDice } from './ui/dice';
+import { el, mount, playerColors, prefersReducedMotion } from './ui/layout';
+import { animateMove, movePath } from './ui/motion';
+import { showStart } from './ui/start';
 
-mount(el('div', 'screen'));
+const DINO = '\u{1F996}';
+const reduced = prefersReducedMotion();
+
+function pathFor(from: number, result: MoveResult): number[] {
+  if (result.kind === 'bounced') {
+    return movePath(from, LAST_SQUARE).concat(movePath(LAST_SQUARE, result.at).slice(1));
+  }
+  return movePath(from, result.at);
+}
+
+function startGame(count: number): void {
+  const game = new Game(count);
+  const board = createBoard();
+  const colors = playerColors();
+  const dice = createDice(() => void roll());
+
+  const turn = el('div', 'turn');
+  turn.setAttribute('aria-live', 'polite');
+  const turnDino = el('span', 'turn-dino', DINO);
+  const turnName = el('span', 'turn-name');
+  turn.append(turnDino, turnName);
+
+  const log = el('p', 'log');
+  const side = el('div', 'side');
+  side.append(turn, dice.el, log);
+
+  const screen = el('div', 'screen game-screen');
+  screen.append(board.el, side);
+  mount(screen);
+
+  let animating = false;
+  let skip = false;
+
+  function paint(): void {
+    board.render(game);
+    const player = game.current();
+    turnDino.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
+    turnName.textContent = `${player.name}'s turn`;
+    log.textContent = game.log.at(-1) ?? '';
+  }
+
+  async function roll(): Promise<void> {
+    if (game.winner !== null) return;
+    if (animating) {
+      skip = true;
+      return;
+    }
+
+    animating = true;
+    const mover = game.turn;
+    const from = displaySquare(game.players[mover].position);
+
+    await dice.tumble();
+    const face = 1 + Math.floor(Math.random() * 6);
+    dice.showFace(face);
+
+    const result = game.roll(() => face);
+    skip = false;
+    await animateMove(board, mover, pathFor(from, result), {
+      reduced,
+      arc: result.kind === 'boosted' || result.kind === 'dragged',
+      skipped: () => skip,
+    });
+
+    animating = false;
+    paint();
+    if (game.winner !== null) showBanner();
+  }
+
+  function showBanner(): void {
+    const winner = game.players[game.winner ?? 0];
+    const banner = el('div', 'banner');
+    banner.setAttribute('role', 'alert');
+
+    const card = el('div', 'banner-card');
+    const dino = el('div', 'banner-dino');
+    dino.style.setProperty('--c', colors[winner.colorIndex] ?? colors[0]);
+    dino.append(el('span', '', DINO));
+
+    const again = el('button', 'banner-again', '\u21BB another game');
+    again.type = 'button';
+    again.addEventListener('click', () => {
+      banner.remove();
+      game.reset();
+      paint();
+    });
+
+    const alt = el('button', 'banner-alt', 'change players');
+    alt.type = 'button';
+    alt.addEventListener('click', () => {
+      banner.remove();
+      startPicker();
+    });
+
+    card.append(dino, el('p', 'banner-name', `${winner.name} wins`), again, alt);
+    banner.append(card);
+    document.body.append(banner);
+  }
+
+  paint();
+}
+
+function startPicker(): void {
+  mount(showStart((count) => startGame(count)));
+}
+
+function boot(): void {
+  startPicker();
+
+  addEventListener('keydown', (event) => {
+    if (event.key !== ' ') return;
+    const dice = document.querySelector<HTMLButtonElement>('.dice');
+    if (!dice) return;
+    event.preventDefault();
+    dice.click();
+  });
+}
+
+document.body.classList.toggle('reduced', reduced);
+boot();

@@ -166,6 +166,13 @@ button {
 }
 
 .turn-dino {
+  display: grid;
+  place-items: center;
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 2px #fff;
   font-size: clamp(22px, 5vmin, 34px);
   line-height: 1;
 }
@@ -330,10 +337,14 @@ button {
    Shared Square
    ============================================ */
 
+.token.gone {
+  display: none;
+}
+
 .token.dot .at {
   transform: translate(
-    calc(var(--cell) * (0.06 + var(--i) * 0.27)),
-    calc(var(--cell) * -0.31)
+    calc(var(--cell) * (0.04 + var(--i) * 0.27)),
+    calc(var(--cell) * 0.02)
   );
   place-items: start;
 }
@@ -354,14 +365,16 @@ button {
   left: 0;
   width: var(--cell);
   height: var(--cell);
-  display: grid;
-  place-items: center start;
-  padding-left: calc(var(--cell) * 0.75);
-  padding-bottom: calc(var(--cell) * 0.5);
-  font-size: calc(var(--cell) * 0.3);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-left: calc(var(--cell) * 0.58);
+  font-size: calc(var(--cell) * 0.28);
   line-height: 1;
   color: var(--ink);
-  text-shadow: 0 0 4px #05091c;
+  text-shadow:
+    0 0 4px #05091c,
+    0 0 2px #05091c;
 }
 
 /* ============================================
