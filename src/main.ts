@@ -170,6 +170,8 @@ function boot(): void {
 
   addEventListener('keydown', (event) => {
     if (event.key !== ' ') return;
+    // A focused button already handles Space; keep the global roll for the bare board.
+    if (event.target instanceof HTMLElement && event.target.closest('button')) return;
     const dice = document.querySelector<HTMLButtonElement>('.dice');
     if (!dice) return;
     event.preventDefault();
