@@ -33,13 +33,14 @@ export interface MarkSize {
 
 // Trap marks: a share of the cell, never under the floor a phone can show.
 // The source hole is the big one; the exit keeps its own, smaller floor.
+// The art carries its own transparent margin, so the pads fill the tile.
 export const MARK = {
   hole: { frac: 0.8, floor: 22 },
   holeExit: { frac: 0.42, floor: 12 },
-  pad: { frac: 0.68, floor: 18 },
-  ship: { frac: 0.6, floor: 15 },
-  landed: { frac: 0.5, floor: 15 },
-  dust: { frac: 0.4, floor: 10 },
+  pad: { frac: 1.0, floor: 22 },
+  ship: { frac: 0.92, floor: 20 },
+  landed: { frac: 0.8, floor: 17 },
+  dust: { frac: 0.62, floor: 12 },
 } satisfies Record<string, MarkSize>;
 
 /** Mark size in pixels: live marks full, the rest a touch smaller, floors held. */
@@ -88,10 +89,15 @@ const PAIR_MARKS: Record<TrapKind, readonly (readonly [string, MarkSize, boolean
 };
 
 /** Every trap's trails and marks, in the link layer's own pixels. */
-export function trapPairs(traps: Board, cell: number, live: LinkPair | null): TrapPair[] {
+export function trapPairs(
+  traps: Board,
+  cell: number,
+  live: LinkPair | null,
+  gap = 0,
+): TrapPair[] {
   const build = (kind: TrapKind, from: number, to: number): TrapPair => {
     const on = live?.from === from && live?.to === to;
-    const geometry = linkPath(from, to, cell, 0);
+    const geometry = linkPath(from, to, cell, gap);
     const k = (cell / MOCK_CELL) * (on ? 1 : 0.85);
     return {
       kind,
@@ -326,11 +332,14 @@ export function createBoard(traps: Board): BoardView {
     if (box.width <= 0 || cell <= 0) return;
     links.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
 
+    // The svg spans all ten tiles, so it holds the nine gaps between them.
+    const gap = Math.max(0, (box.width - cell * 10) / 9);
+
     // The marks are html, so their origin is the board's, not the svg's.
     const base = board.getBoundingClientRect();
     const origin = { x: box.left - base.left, y: box.top - base.top };
 
-    for (const pair of trapPairs(traps, cell, live)) {
+    for (const pair of trapPairs(traps, cell, live, gap)) {
       const group = svg('g');
       group.setAttribute('class', 'link');
       group.dataset.live = String(pair.live);

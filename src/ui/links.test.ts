@@ -138,6 +138,19 @@ test('a resized board re-seats every mark on its trail, nothing left behind', ()
   }
 });
 
+test('the tile gap moves every mark with its trail', () => {
+  const traps = makeBoard(7);
+  for (const pair of trapPairs(traps, CELL, null, GAP)) {
+    expect({ x: pair.geometry.start.x, y: pair.geometry.start.y }).toEqual(
+      squareCentre(pair.from, CELL, GAP),
+    );
+    for (const mark of pair.marks) {
+      const at = STARTS[pair.kind].includes(mark.key) ? pair.geometry.start : pair.geometry.end;
+      expect({ x: mark.x, y: mark.y }).toEqual(at);
+    }
+  }
+});
+
 test('the live pair grows its marks and leaves the rest dimmed', () => {
   const traps = makeBoard(20261115);
   const [from, to] = traps.holes[0];

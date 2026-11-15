@@ -20,13 +20,18 @@
   --gutter: min(5.5rem, 12vw);
   --screen-pad: 8px;
   --gap: clamp(8px, 2vw, 22px);
+  --tile-gap: clamp(4px, 1.1vmin, 10px);
   --panel-w: 220px;
   /* portrait panel: turn row, two 8px gaps, dice, one log line */
   --panel-h: calc(
     max(48px, 1.8 * clamp(22px, 5vmin, 34px) + 8px) + clamp(96px, 18vmin, 120px) +
       1.2 * clamp(10px, 2vmin, 13px) + 16px
   );
-  --fit-w: calc((100vw - var(--gutter) - var(--panel-w) - var(--gap) - var(--screen-pad) * 2) / 10);
+  /* 10 gaps: the gutter column carries one too. */
+  --fit-w: calc(
+    (100vw - var(--gutter) - var(--panel-w) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10) /
+      10
+  );
   --fit-h: 8vh;
   --fit-h: 8dvh;
   --cell: min(var(--fit-w), var(--fit-h));
@@ -35,9 +40,13 @@
 
 @media (orientation: portrait) {
   :root {
-    --fit-w: calc((100vw - var(--gutter) - var(--screen-pad) * 2) / 10);
-    --fit-h: calc((100vh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2) / 10);
-    --fit-h: calc((100dvh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2) / 10);
+    --fit-w: calc((100vw - var(--gutter) - var(--screen-pad) * 2 - var(--tile-gap) * 10) / 10);
+    --fit-h: calc(
+      (100vh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10) / 10
+    );
+    --fit-h: calc(
+      (100dvh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10) / 10
+    );
   }
 }
 
@@ -419,6 +428,7 @@ button {
   display: grid;
   grid-template-columns: var(--gutter) repeat(10, var(--cell));
   grid-template-rows: repeat(10, var(--cell));
+  gap: var(--tile-gap);
   position: relative;
   isolation: isolate;
 }

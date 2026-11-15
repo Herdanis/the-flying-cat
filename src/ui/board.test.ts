@@ -90,16 +90,16 @@ test('a badge on a square the plan dropped is pruned', () => {
 test('trap marks take a share of the cell but keep a phone floor', () => {
   expect(markSize(30, MARK.hole, false)).toBe(22);
   expect(markSize(30, MARK.holeExit, false)).toBe(12);
-  expect(markSize(30, MARK.pad, false)).toBe(18);
-  expect(markSize(30, MARK.ship, false)).toBeCloseTo(15.3, 6);
-  expect(markSize(30, MARK.landed, false)).toBe(15);
-  expect(markSize(30, MARK.dust, false)).toBeCloseTo(10.2, 6);
+  expect(markSize(30, MARK.pad, false)).toBeCloseTo(25.5, 6);
+  expect(markSize(30, MARK.ship, false)).toBeCloseTo(23.46, 6);
+  expect(markSize(30, MARK.landed, false)).toBeCloseTo(20.4, 6);
+  expect(markSize(30, MARK.dust, false)).toBeCloseTo(15.81, 6);
   expect(markSize(100, MARK.hole, true)).toBeCloseTo(80, 6);
   expect(markSize(100, MARK.holeExit, true)).toBeCloseTo(42, 6);
-  expect(markSize(100, MARK.pad, false)).toBeCloseTo(57.8, 6);
-  expect(markSize(100, MARK.ship, true)).toBeCloseTo(60, 6);
-  expect(markSize(100, MARK.landed, true)).toBeCloseTo(50, 6);
-  expect(markSize(100, MARK.dust, true)).toBeCloseTo(40, 6);
+  expect(markSize(100, MARK.pad, false)).toBeCloseTo(85, 6);
+  expect(markSize(100, MARK.ship, true)).toBeCloseTo(92, 6);
+  expect(markSize(100, MARK.landed, true)).toBeCloseTo(80, 6);
+  expect(markSize(100, MARK.dust, true)).toBeCloseTo(62, 6);
 });
 
 test('the hole you fall into stays bigger than the one you come out of', () => {
@@ -115,11 +115,13 @@ test('the hole you fall into stays bigger than the one you come out of', () => {
 test('trap marks share one centre and stay inside the tile', () => {
   for (const cell of [30, 54, 101.8]) {
     const centre = cell * 0.5;
-    for (const spec of Object.values(MARK)) {
+    for (const [key, spec] of Object.entries(MARK)) {
       for (const live of [true, false]) {
         const half = markSize(cell, spec, live) / 2;
-        expect(centre - half).toBeGreaterThan(0);
-        expect(centre + half).toBeLessThan(cell);
+        expect(centre - half).toBeGreaterThanOrEqual(-1e-9);
+        expect(centre + half).toBeLessThanOrEqual(cell + 1e-9);
+        // Only a pad may reach the tile's edge; the art's margin keeps it inside.
+        if (key !== 'pad') expect(centre - half).toBeGreaterThan(0);
       }
     }
   }
