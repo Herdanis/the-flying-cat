@@ -7,7 +7,7 @@ import { el, prefersReducedMotion } from './layout';
 const TUMBLE_MS = 420;
 const FRAME_MS = 70;
 
-const PIPS: Record<number, number[]> = {
+export const PIPS: Record<number, number[]> = {
   0: [],
   1: [4],
   2: [0, 8],
@@ -52,6 +52,6 @@ export function createDice(onRoll: () => void): DiceView {
     button.classList.remove('tumbling');
   }
 
-  showFace(0);
+  showFace(1);
   return { el: button, showFace, tumble };
 }
