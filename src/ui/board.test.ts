@@ -1,5 +1,16 @@
 import { expect, test } from 'vitest';
-import { dirToNext, badgesToDrop, numberInk, seatCentre, SEAT, squarePlan, tokenPlan } from './board';
+import {
+  dirToNext,
+  badgesToDrop,
+  MARK,
+  markCentre,
+  markSize,
+  numberInk,
+  seatCentre,
+  SEAT,
+  squarePlan,
+  tokenPlan,
+} from './board';
 
 test('the number ink flips on the four bright grounds', () => {
   for (const leg of [4, 5, 6, 9]) expect(numberInk(leg)).toBe('#2a1f08');
@@ -75,4 +86,39 @@ test('a badge on a square the plan dropped is pruned', () => {
   expect(badgesToDrop([1, 5], [5])).toEqual([1]);
   expect(badgesToDrop([5], [5])).toEqual([]);
   expect(badgesToDrop([], [5])).toEqual([]);
+});
+
+const SEATS = [0.63, 0.66, 0.7, 0.74, 0.8];
+
+test('trap marks take a share of the cell but keep a phone floor', () => {
+  expect(markSize(30, MARK.hole, false)).toBe(16);
+  expect(markSize(30, MARK.holeDrop, false)).toBe(14);
+  expect(markSize(30, MARK.pad, false)).toBe(14);
+  expect(markSize(30, MARK.ship, false)).toBe(13);
+  expect(markSize(30, MARK.landed, false)).toBe(13);
+  expect(markSize(30, MARK.dust, false)).toBe(10);
+  expect(markSize(100, MARK.hole, true)).toBeCloseTo(50, 6);
+  expect(markSize(100, MARK.pad, false)).toBeCloseTo(39.1, 6);
+});
+
+test('every trap mark stays on its tile and clear of the number', () => {
+  for (const cell of [30, 54, 101.8]) {
+    const font = Math.max(7, cell * 0.25);
+    const numRight = cell * 0.12 + font * 1.24;
+    const numBottom = cell * 0.12 + font;
+    for (const spec of Object.values(MARK)) {
+      for (const live of [true, false]) {
+        const size = markSize(cell, spec, live);
+        for (const fy of SEATS) {
+          const { x, y } = markCentre(cell, 0.5, fy, size);
+          expect(x - size / 2).toBeGreaterThanOrEqual(0);
+          expect(x + size / 2).toBeLessThanOrEqual(cell);
+          expect(y - size / 2).toBeGreaterThanOrEqual(0);
+          expect(y + size / 2).toBeLessThanOrEqual(cell);
+          const onNumber = x - size / 2 < numRight && y - size / 2 < numBottom;
+          expect(onNumber).toBe(false);
+        }
+      }
+    }
+  }
 });

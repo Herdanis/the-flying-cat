@@ -25,6 +25,55 @@ const BRIGHT_LEGS = new Set([4, 5, 6, 9]);
 const MOCK_CELL = 54;
 // Room the token's ring takes outside its disc.
 const RING = 2;
+// Room a mark keeps from the tile wall.
+const MARK_EDGE = 0.03;
+
+export interface MarkSize {
+  frac: number;
+  floor: number;
+}
+
+// Trap marks: a share of the cell, never under the floor a phone can show.
+export const MARK = {
+  hole: { frac: 0.5, floor: 16 },
+  holeDrop: { frac: 0.4, floor: 14 },
+  pad: { frac: 0.46, floor: 14 },
+  ship: { frac: 0.42, floor: 13 },
+  landed: { frac: 0.38, floor: 13 },
+  dust: { frac: 0.3, floor: 10 },
+} satisfies Record<string, MarkSize>;
+
+/** Mark size in pixels: live marks full, the rest a touch smaller, floors held. */
+export function markSize(cell: number, spec: MarkSize, live: boolean): number {
+  return Math.max(cell * spec.frac * (live ? 1 : 0.85), spec.floor);
+}
+
+/** The number: 12% in from the tile's corner, at max(7px, 25% of the cell). */
+function numberBox(cell: number): { right: number; bottom: number } {
+  const font = Math.max(7, cell * 0.25);
+  return { right: cell * 0.12 + font * 1.9, bottom: cell * 0.12 + font + 1 };
+}
+
+/** Mark centre on a cell: kept on the tile and off the number's corner. */
+export function markCentre(
+  cell: number,
+  fx: number,
+  fy: number,
+  size: number,
+): { x: number; y: number } {
+  const edge = cell * MARK_EDGE;
+  const half = size / 2;
+  const low = edge + half;
+  const high = cell - edge - half;
+  const fit = (value: number): number =>
+    high <= low ? cell / 2 : Math.min(Math.max(value, low), high);
+  const x = fit(cell * fx);
+  let y = fit(cell * fy);
+  // A mark wider than the gap the number leaves slides under it instead.
+  const num = numberBox(cell);
+  if (x - half < num.right && y - half < num.bottom) y = fit(num.bottom + half);
+  return { x, y };
+}
 
 // Token seats as a fraction of the cell; the number owns the top-left.
 export interface Seat {
@@ -215,33 +264,45 @@ export function createBoard(traps: Board): BoardView {
     });
   }
 
-  function drawRocket(from: number, to: number, cell: number, k: number): SVGGElement {
+  function put(
+    key: string,
+    square: number,
+    spec: MarkSize,
+    fy: number,
+    cell: number,
+    live: boolean,
+  ): SVGImageElement {
+    const size = markSize(cell, spec, live);
+    const centre = squareCentre(square, cell, 0);
+    const at = markCentre(cell, 0.5, fy, size);
+    return mark(key, { x: centre.x - cell / 2 + at.x, y: centre.y - cell / 2 + at.y }, size);
+  }
+
+  function drawRocket(from: number, to: number, cell: number, live: boolean): SVGGElement {
+    const k = live ? 1 : 0.85;
     const geometry = linkPath(from, to, cell, 0);
-    const start = squareCentre(from, cell, 0);
-    const padY = start.y + cell * 0.24 * k;
-    const dropY = geometry.end.y + cell * 0.24 * k;
     const group = svg('g');
 
     group.append(
       ...trail(geometry, [[5, 13], [3.4, 7.5]], '#7ee7a4', (cell / MOCK_CELL) * k),
-      mark('launchPad', { x: start.x, y: padY }, cell * 0.34 * k),
-      mark('rocketShip', { x: start.x, y: start.y + cell * 0.16 * k }, cell * 0.3 * k),
-      mark('landingPad', { x: geometry.end.x, y: dropY }, cell * 0.34 * k),
-      mark('rocketLanded', { x: geometry.end.x, y: geometry.end.y + cell * 0.13 * k }, cell * 0.26 * k),
-      mark('dust', { x: geometry.end.x, y: geometry.end.y + cell * 0.3 * k }, cell * 0.24 * k),
+      put('launchPad', from, MARK.pad, 0.74, cell, live),
+      put('rocketShip', from, MARK.ship, 0.66, cell, live),
+      put('landingPad', to, MARK.pad, 0.74, cell, live),
+      put('rocketLanded', to, MARK.landed, 0.63, cell, live),
+      put('dust', to, MARK.dust, 0.8, cell, live),
     );
     return group;
   }
 
-  function drawHole(from: number, to: number, cell: number, k: number): SVGGElement {
+  function drawHole(from: number, to: number, cell: number, live: boolean): SVGGElement {
+    const k = live ? 1 : 0.85;
     const geometry = linkPath(from, to, cell, 0);
-    const start = squareCentre(from, cell, 0);
     const group = svg('g');
 
     group.append(
       ...trail(geometry, [[22, 5], [13, 3]], '#c9a6ff', (cell / MOCK_CELL) * k),
-      mark('hole', { x: start.x, y: start.y + cell * 0.2 * k }, cell * 0.42 * k),
-      mark('hole', { x: geometry.end.x, y: geometry.end.y + cell * 0.24 * k }, cell * 0.32 * k),
+      put('hole', from, MARK.hole, 0.7, cell, live),
+      put('hole', to, MARK.holeDrop, 0.74, cell, live),
     );
     return group;
   }
@@ -256,8 +317,8 @@ export function createBoard(traps: Board): BoardView {
     const draw = (kind: 'rocket' | 'hole', from: number, to: number): void => {
       const on = live?.from === from && live.to === to;
       const group = kind === 'rocket'
-        ? drawRocket(from, to, cell, on ? 1 : 0.85)
-        : drawHole(from, to, cell, on ? 1 : 0.85);
+        ? drawRocket(from, to, cell, on)
+        : drawHole(from, to, cell, on);
       group.setAttribute('class', 'link');
       group.dataset.live = String(on);
       group.dataset.from = String(from);
