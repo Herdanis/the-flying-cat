@@ -24,6 +24,7 @@ describe('Game', () => {
     const r = g.roll(() => 3);
     expect(r.kind).toBe('won');
     expect(g.winner).toBe(0);
+    expect(g.log.at(-1)).toBe('Dino 1 wins!');
     const turnBefore = g.turn;
     g.roll(() => 1);
     expect(g.turn).toBe(turnBefore);
@@ -39,11 +40,32 @@ describe('Game', () => {
     expect(g.players).toHaveLength(2);
   });
 
-  test('the log names what happened', () => {
+  test('the log names the roll and what it did', () => {
     const g = new Game(2);
     g.players[0].position = 3;
     g.roll(() => 1);
-    expect(g.log.at(-1)).toContain('rocket');
+    expect(g.log.at(-1)).toBe('Dino 1 rolled 1 — rocket! Up to 25.');
+  });
+
+  test('the log names a black hole', () => {
+    const g = new Game(2);
+    g.players[0].position = 60;
+    g.roll(() => 1);
+    expect(g.log.at(-1)).toBe('Dino 1 rolled 1 — black hole. Down to 41.');
+  });
+
+  test('the log names a bounce', () => {
+    const g = new Game(2);
+    g.players[0].position = 98;
+    g.roll(() => 5);
+    expect(g.log.at(-1)).toBe('Dino 1 rolled 5, bounced back to 97.');
+  });
+
+  test('the log names a plain landing', () => {
+    const g = new Game(2);
+    g.players[0].position = 0;
+    g.roll(() => 2);
+    expect(g.log.at(-1)).toBe('Dino 1 rolled 2. Now on 2.');
   });
 
   test('the log stays bounded', () => {

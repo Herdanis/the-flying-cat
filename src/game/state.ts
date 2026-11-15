@@ -48,11 +48,10 @@ export class Game {
     this.players[this.turn].position = result.at;
 
     const who = this.players[this.turn].name;
-    this.pushLog(describe(who, result));
+    this.pushLog(describe(who, face, result));
 
     if (result.kind === 'won') {
       this.winner = this.turn;
-      this.pushLog(`${who} wins!`);
     } else {
       this.turn = (this.turn + 1) % this.players.length;
     }
@@ -72,17 +71,17 @@ export class Game {
   }
 }
 
-function describe(who: string, r: MoveResult): string {
+function describe(who: string, face: number, r: MoveResult): string {
   switch (r.kind) {
     case 'won':
-      return `${who} reached the Star!`;
+      return `${who} wins!`;
     case 'bounced':
-      return `${who} bounced back to ${r.at}.`;
+      return `${who} rolled ${face}, bounced back to ${r.at}.`;
     case 'boosted':
-      return `${who} caught a rocket to ${r.at}!`;
+      return `${who} rolled ${face} — rocket! Up to ${r.at}.`;
     case 'dragged':
-      return `${who} fell into a black hole, down to ${r.at}.`;
+      return `${who} rolled ${face} — black hole. Down to ${r.at}.`;
     case 'landed':
-      return `${who} moved to ${r.at}.`;
+      return `${who} rolled ${face}. Now on ${r.at}.`;
   }
 }
