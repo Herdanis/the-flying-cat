@@ -10,6 +10,7 @@ import { displaySquare, createBoard, type BoardView } from './ui/board';
 import { createDice } from './ui/dice';
 import { el, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
 import { animateMove, movePath } from './ui/motion';
+import { isMuted, play, setMuted } from './ui/sound';
 import { showStart } from './ui/start';
 
 const DINO = '\u{1F996}';
@@ -20,6 +21,30 @@ let live: { board: BoardView; game: Game } | null = null;
 function remeasure(): void {
   if (!live || !live.board.el.isConnected) return;
   live.board.reflow(live.game);
+}
+
+// ============================================
+// Mute Toggle
+// ============================================
+
+function createMute(): HTMLButtonElement {
+  const button = el('button', 'mute');
+  button.type = 'button';
+
+  const paint = (): void => {
+    const off = isMuted();
+    button.textContent = off ? '\u{1F507}' : '\u{1F50A}';
+    button.setAttribute('aria-label', off ? 'Unmute sound' : 'Mute sound');
+    button.setAttribute('aria-pressed', String(off));
+  };
+
+  button.addEventListener('click', () => {
+    setMuted(!isMuted());
+    paint();
+  });
+
+  paint();
+  return button;
 }
 
 function pathFor(from: number, result: MoveResult): number[] {
@@ -43,7 +68,7 @@ function startGame(count: number): void {
 
   const log = el('p', 'log');
   const side = el('div', 'side');
-  side.append(turn, dice.el, log);
+  side.append(turn, dice.el, createMute(), log);
 
   const screen = el('div', 'screen game-screen');
   screen.append(board.el, side);
@@ -69,6 +94,7 @@ function startGame(count: number): void {
     }
 
     animating = true;
+    play('roll');
     const mover = game.turn;
     const from = displaySquare(game.players[mover].position);
 
@@ -85,8 +111,14 @@ function startGame(count: number): void {
     });
 
     animating = false;
+    if (result.kind === 'boosted') play('rocket');
+    if (result.kind === 'dragged') play('hole');
+
     paint();
-    if (game.winner !== null) showBanner();
+    if (game.winner !== null) {
+      play('win');
+      showBanner();
+    }
   }
 
   function showBanner(): void {
