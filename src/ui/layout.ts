@@ -2,6 +2,8 @@
 // Layout Helpers
 // ============================================
 
+import { asset } from './assets';
+
 export function root(): HTMLElement {
   return document.querySelector<HTMLElement>('#app')!;
 }
@@ -28,6 +30,17 @@ export function onViewportChange(fn: () => void): void {
 
 export function prefersReducedMotion(): boolean {
   return matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** A dino portrait; `data-dino` lets the sheet crop it to the head in small slots. */
+export function faceImg(key: string): HTMLImageElement {
+  const img = document.createElement('img');
+  img.className = 'face';
+  img.src = asset('dinos', key);
+  img.alt = '';
+  img.draggable = false;
+  img.dataset.dino = key;
+  return img;
 }
 
 export function playerColors(): string[] {

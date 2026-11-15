@@ -7,7 +7,7 @@ import type { Board } from '../game/randomBoard';
 import { SPECIES } from '../game/species';
 import type { Game } from '../game/state';
 import { asset, groundFor } from './assets';
-import { el, playerColors } from './layout';
+import { el, faceImg, playerColors } from './layout';
 import { linkPath, ribbonPath, squareCentre, type LinkGeometry } from './links';
 
 export type TrackDir = 'right' | 'left' | 'up';
@@ -282,12 +282,7 @@ export function createBoard(traps: Board): BoardView {
     while (pieces.length < count) {
       const species = SPECIES[pieces.length % SPECIES.length];
       const piece = el('div', 'token');
-      const face = document.createElement('img');
-      face.className = 'face';
-      face.src = asset('dinos', species.key);
-      face.alt = '';
-      face.draggable = false;
-      piece.append(face);
+      piece.append(faceImg(species.key));
       pieces.push(piece);
       overlay.append(piece);
     }

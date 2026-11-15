@@ -4,8 +4,7 @@
 
 import { SPECIES } from '../game/species';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../game/state';
-import { asset } from './assets';
-import { el, playerColors } from './layout';
+import { el, faceImg, playerColors } from './layout';
 
 export function showStart(onPick: (count: number) => void): HTMLElement {
   const screen = el('div', 'screen start-screen');
@@ -19,12 +18,10 @@ export function showStart(onPick: (count: number) => void): HTMLElement {
 
     const faces = el('span', 'start-faces');
     for (let i = 0; i < count; i++) {
-      const face = document.createElement('img');
-      face.src = asset('dinos', SPECIES[i].key);
-      face.alt = '';
-      face.draggable = false;
-      face.style.setProperty('--c', colors[i] ?? colors[0]);
-      faces.append(face);
+      const chip = el('span', 'start-face');
+      chip.style.setProperty('--c', colors[i] ?? colors[0]);
+      chip.append(faceImg(SPECIES[i].key));
+      faces.append(chip);
     }
 
     btn.append(el('span', 'start-count', String(count)), faces);

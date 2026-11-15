@@ -11,13 +11,14 @@ import { asset } from './ui/assets';
 import { displaySquare, createBoard, type BoardView } from './ui/board';
 import { createDice } from './ui/dice';
 import { speaker } from './ui/icons';
-import { el, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
+import { el, faceImg, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
 import { animateMove, movePath } from './ui/motion';
 import { isMuted, play, setMuted } from './ui/sound';
 import { showStart } from './ui/start';
 
-const CONFETTI = ['#ffd23f', '#57e389', '#43b7ff', '#ff5f6d', '#c58bff'];
 const SKY: [string, string][] = [
+  ['nebulaA', 'sky-nebula-a'],
+  ['nebulaB', 'sky-nebula-b'],
   ['sun', 'sky-sun'],
   ['moon', 'sky-moon'],
   ['planet', 'sky-planet'],
@@ -112,11 +113,7 @@ function startGame(count: number): void {
   const colors = playerColors();
   const dice = createDice(() => void roll());
 
-  const turnFace = document.createElement('img');
-  turnFace.className = 'turn-face';
-  turnFace.alt = '';
   const turnDino = el('span', 'turn-dino');
-  turnDino.append(turnFace);
 
   const turn = el('div', 'turn');
   turn.setAttribute('aria-live', 'polite');
@@ -139,7 +136,7 @@ function startGame(count: number): void {
     board.render(game);
     const player = game.current();
     turnDino.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
-    turnFace.src = asset('dinos', SPECIES[player.colorIndex % SPECIES.length].key);
+    turnDino.replaceChildren(faceImg(SPECIES[player.colorIndex % SPECIES.length].key));
     turnName.textContent = `${player.name}'s turn`;
     log.textContent = game.log.at(-1) ?? '';
   }
@@ -191,22 +188,18 @@ function startGame(count: number): void {
     const card = el('div', 'banner-card');
     const confetti = el('div', 'confetti');
     confetti.setAttribute('aria-hidden', 'true');
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 18 && !reduced; i++) {
       const bit = el('i', 'confetti-bit');
       bit.style.setProperty('--x', `${(i * 37) % 100}%`);
       bit.style.setProperty('--delay', `${(i % 6) * 0.24}s`);
       bit.style.setProperty('--spin', `${180 + (i % 5) * 90}deg`);
-      bit.style.setProperty('--col', CONFETTI[i % CONFETTI.length]);
+      bit.style.setProperty('--col', colors[i % colors.length]);
       confetti.append(bit);
     }
 
     const dino = el('div', 'banner-dino');
     dino.style.setProperty('--c', colors[winner.colorIndex] ?? colors[0]);
-    const face = document.createElement('img');
-    face.src = asset('dinos', SPECIES[winner.colorIndex % SPECIES.length].key);
-    face.alt = '';
-    face.draggable = false;
-    dino.append(face);
+    dino.append(faceImg(SPECIES[winner.colorIndex % SPECIES.length].key));
 
     const again = el('button', 'banner-again', '\u21BB another game');
     again.type = 'button';
@@ -237,7 +230,15 @@ function startPicker(): void {
   mount(showStart((count) => startGame(count)));
 }
 
+/** One palette: the species colour seeds every player variable. */
+function seedColours(): void {
+  SPECIES.forEach((species, i) => {
+    document.documentElement.style.setProperty(`--p${i + 1}`, species.colour);
+  });
+}
+
 function boot(): void {
+  seedColours();
   createSky();
   startPicker();
 

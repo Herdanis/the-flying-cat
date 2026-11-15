@@ -58,11 +58,12 @@ outside it risks clipping or crowding a neighbour.
 | `sky/nebulaA` | 320 × 200 | fades out by the edge | transparent corners, violet bloom |
 | `sky/nebulaB` | 320 × 200 | fades out by the edge | transparent corners, pink bloom |
 | `marks/rocketShip` | 100 × 100 | 6 units (art inside 88 × 88) | transparent background, nose up, flame down, 34 units tall before scaling |
+| `marks/rocketLanded` | 100 × 100 | 6 units | transparent background, nose up, legs down, no flame, smaller than the launched ship |
 | `marks/launchPad` | 100 × 100 | 6 units | transparent background, pad below, gantry and beacon to the right |
-| `marks/landingPad` | 100 × 100 | 6 units | transparent background, wide flat ring, drawn in perspective |
+| `marks/landingPad` | 100 × 100 | 6 units | transparent background, square ring with four landing ticks, no perspective |
 | `marks/dust` | 100 × 100 | 6 units | transparent background, a puff of pale dots |
 | `marks/hole` | 100 × 100 | 6 units | transparent background, dark centre with a violet rim |
-| `marks/star` | 100 × 100 | 6 units | transparent background, flat pale-gold star |
+| `marks/star` | 100 × 100 | 6 units | transparent background, flat pale-gold star with a face |
 
 Grounds are drawn edge to edge on purpose: the board clips each one to a
 rounded square, so any transparent margin shows up as a gap at the tile edge.
