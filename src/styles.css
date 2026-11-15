@@ -207,53 +207,93 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
-  border: 1px solid var(--line);
-  background: #101838;
-  overflow: hidden;
+  --pad: calc(var(--cell) * 0.09);
+  --tint: #101838;
 }
 
 .cell.alt {
-  background: #0c1330;
+  --tint: #0c1330;
 }
 
 .cell.rocket {
-  background: #11321f;
-  border-color: #1d5636;
+  --tint: #11321f;
 }
 
 .cell.hole {
-  background: #221a3c;
-  border-color: #3a2c66;
+  --tint: #221a3c;
 }
 
 .cell.star {
-  background: #3a2f10;
-  border-color: #6a5718;
+  --tint: #3a2f10;
+}
+
+.cell::before {
+  content: '';
+  position: absolute;
+  inset: var(--pad);
+  border-radius: calc(var(--cell) * 0.14);
+  background: var(--tint);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.cell[data-dir]::after {
+  content: '';
+  position: absolute;
+  border: 0 dashed #3d4977;
+}
+
+.cell[data-dir='right']::after {
+  top: 50%;
+  left: calc(100% - var(--pad));
+  width: calc(var(--pad) * 2);
+  border-top-width: 2px;
+}
+
+.cell[data-dir='left']::after {
+  top: 50%;
+  right: calc(100% - var(--pad));
+  width: calc(var(--pad) * 2);
+  border-top-width: 2px;
+}
+
+.cell[data-dir='up']::after {
+  left: 50%;
+  bottom: calc(100% - var(--pad));
+  height: calc(var(--pad) * 2);
+  border-left-width: 2px;
 }
 
 .cell-num {
   position: absolute;
-  top: 1px;
-  left: 3px;
+  top: calc(var(--pad) + 1px);
+  left: calc(var(--pad) + 2px);
   font-size: max(7px, calc(var(--cell) * 0.25));
   line-height: 1;
-  color: var(--ink-faint);
+  color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
 }
 
-.cell-glyph {
-  font-size: calc(var(--cell) * 0.46);
-  line-height: 1;
+.cell-mark {
+  position: relative;
+  display: block;
+  width: calc(var(--cell) * 0.42);
+  height: calc(var(--cell) * 0.42);
   color: var(--rocket);
 }
 
-.cell.hole .cell-glyph {
+.cell-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cell.hole .cell-mark {
   color: var(--hole);
 }
 
-.cell.star .cell-glyph {
-  font-size: calc(var(--cell) * 0.58);
+.cell.star .cell-mark {
+  width: calc(var(--cell) * 0.52);
+  height: calc(var(--cell) * 0.52);
   color: var(--star);
 }
 

@@ -4,7 +4,10 @@
 
 import { BLACK_HOLES, LAST_SQUARE, LEGS, ROCKETS } from '../game/board';
 import type { Game } from '../game/state';
+import { hole, rocket, star } from './icons';
 import { el } from './layout';
+
+export type TrackDir = 'right' | 'left' | 'up';
 
 const DINO = '\u{1F996}';
 const DOTS_FIT = 3;
@@ -28,6 +31,13 @@ export function cellGridPos(square: number): { column: number; row: number } {
   return { column: column + 1, row: 10 - leg };
 }
 
+export function dirToNext(square: number): TrackDir | null {
+  if (square < 1 || square >= LAST_SQUARE) return null;
+  const leg = Math.floor((square - 1) / 10);
+  if ((square - 1) % 10 === 9) return 'up';
+  return leg % 2 === 0 ? 'right' : 'left';
+}
+
 export function createBoard(): BoardView {
   const board = el('div', 'board');
   board.setAttribute('role', 'img');
@@ -44,25 +54,30 @@ export function createBoard(): BoardView {
     cell.style.gridColumn = String(column);
     cell.style.gridRow = String(row);
     if (square % 2 === 0) cell.classList.add('alt');
+    const dir = dirToNext(square);
+    if (dir) cell.dataset.dir = dir;
 
     const num = el('span', 'cell-num', String(square));
     num.setAttribute('aria-hidden', 'true');
     cell.append(num);
 
-    const glyph = el('span', 'cell-glyph');
-    glyph.setAttribute('aria-hidden', 'true');
+    let marker = '';
     if (rocketAt.has(square)) {
       cell.classList.add('rocket');
-      glyph.textContent = '\u21E7';
-      cell.append(glyph);
+      marker = rocket();
     } else if (holeAt.has(square)) {
       cell.classList.add('hole');
-      glyph.textContent = '\u25C9';
-      cell.append(glyph);
+      marker = hole();
     } else if (square === LAST_SQUARE) {
       cell.classList.add('star');
-      glyph.textContent = '\u2605';
-      cell.append(glyph);
+      marker = star();
+    }
+
+    if (marker) {
+      const mark = el('span', 'cell-mark');
+      mark.setAttribute('aria-hidden', 'true');
+      mark.innerHTML = marker;
+      cell.append(mark);
     }
 
     cells.set(square, cell);
