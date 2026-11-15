@@ -35,10 +35,11 @@ server code, no runtime dependencies.
 ## Docker
 
 ```bash
-docker compose up -d --build
+make up
 ```
 
-Then open `http://localhost:8080`. `docker compose down` stops it.
+Then open `http://localhost:8080`. `make down` stops it. `make logs` follows the
+container log, `make test` runs the tests.
 
 ## The rules
 
