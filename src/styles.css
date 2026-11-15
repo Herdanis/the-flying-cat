@@ -543,6 +543,29 @@ button {
 }
 
 /* ============================================
+   Trap Marks
+   ============================================ */
+
+/* Same band as the trails, later in the tree: above them, under the numbers. */
+.marks {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.trap-mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0.58;
+}
+
+.trap-mark[data-live='true'] {
+  opacity: 1;
+}
+
+/* ============================================
    Pieces
    ============================================ */
 

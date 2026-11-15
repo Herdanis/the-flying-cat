@@ -77,11 +77,14 @@ only code that turns a key into a path. A missing file leaves a gap; it never
 breaks the screen.
 
 Each square paints its leg's ground picture — `grounds/mars.svg` across squares
-41 to 50 — and keeps its number in that leg's ink, above the link layer so a
-trail never covers a digit. The links are one SVG layer above the squares and
-below the dinos: `linkPath` curves between two square centres, `ribbonPath`
-tapers it from pad to pad, and the link the last move used carries
-`data-live="true"` and draws at full strength while the rest sit back. A
+41 to 50 — and keeps its number in that leg's ink, above the link and mark
+layers so a trail never covers a digit. The trails are one SVG layer above the
+squares: `linkPath` curves between two square centres and `ribbonPath` tapers it
+from pad to pad. The pads, ships, holes and dust are plain `<img>` marks in a
+second layer above the trails and below the dinos, because `<image>` inside an
+SVG does not paint in every engine. `trapPairs` places both layers from the same
+points, so a trail always ends inside its mark. The link the last move used
+carries `data-live="true"` and draws at full strength while the rest sit back. A
 rocket's source draws the ship on its pad with the flame lit; its landing draws
 a second ship, legs down and flame out, on a landing ring. A dashed segment runs
 from every square into the next, so the route reads even where no trap sits.

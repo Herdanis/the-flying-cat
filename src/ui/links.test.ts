@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { makeBoard } from '../game/randomBoard';
+import { MARK, markSize, trapPairs, type MarkSize } from './board';
 import { linkPath, ribbonPath, squareCentre } from './links';
 
 const CELL = 48;
@@ -93,3 +94,60 @@ test('every trap pair on a seeded board makes a finite path across the board', (
     expect(run).toBeLessThan(DIAGONAL);
   }
 });
+
+const STARTS = { rocket: ['launchPad', 'rocketShip'], hole: ['hole'] };
+const ENDS = { rocket: ['landingPad', 'rocketLanded', 'dust'], hole: ['holeExit'] };
+const SPEC = {
+  launchPad: MARK.pad,
+  rocketShip: MARK.ship,
+  landingPad: MARK.pad,
+  rocketLanded: MARK.landed,
+  dust: MARK.dust,
+  hole: MARK.hole,
+  holeExit: MARK.holeExit,
+} satisfies Record<string, MarkSize>;
+
+test('every trap mark sits on the very point its trail leaves from or reaches', () => {
+  const traps = makeBoard(20261115);
+  const pairs = trapPairs(traps, CELL, null);
+
+  expect(pairs).toHaveLength(18);
+  expect(pairs.reduce((sum, pair) => sum + pair.marks.length, 0)).toBe(63);
+
+  for (const pair of pairs) {
+    const keys = pair.marks.map((mark) => mark.key);
+    expect(keys).toEqual([...STARTS[pair.kind], ...ENDS[pair.kind]]);
+
+    for (const mark of pair.marks) {
+      const at = STARTS[pair.kind].includes(mark.key) ? pair.geometry.start : pair.geometry.end;
+      expect({ x: mark.x, y: mark.y }).toEqual(at);
+      expect(mark.size).toBe(markSize(CELL, SPEC[mark.key as keyof typeof SPEC], false));
+    }
+  }
+});
+
+test('a resized board re-seats every mark on its trail, nothing left behind', () => {
+  const traps = makeBoard(7);
+  for (const cell of [30, 101.8]) {
+    for (const pair of trapPairs(traps, cell, null)) {
+      const end = pair.marks.at(-1)!;
+      const geometry = linkPath(pair.from, pair.to, cell, 0);
+      expect({ x: end.x, y: end.y }).toEqual(geometry.end);
+      expect(pair.marks).toHaveLength(pair.kind === 'rocket' ? 5 : 2);
+    }
+  }
+});
+
+test('the live pair grows its marks and leaves the rest dimmed', () => {
+  const traps = makeBoard(20261115);
+  const [from, to] = traps.holes[0];
+  const pairs = trapPairs(traps, CELL, { from, to });
+  const live = pairs.find((pair) => pair.live)!;
+
+  expect(live.from).toBe(from);
+  expect(pairs.filter((pair) => pair.live)).toHaveLength(1);
+  for (const mark of live.marks) {
+    expect(mark.size).toBe(markSize(CELL, SPEC[mark.key as keyof typeof SPEC], true));
+  }
+});
+

@@ -47,6 +47,72 @@ export function markSize(cell: number, spec: MarkSize, live: boolean): number {
   return Math.max(cell * spec.frac * (live ? 1 : 0.85), spec.floor);
 }
 
+export type TrapKind = 'rocket' | 'hole';
+
+export interface TrapMark {
+  key: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
+export interface TrapPair {
+  kind: TrapKind;
+  from: number;
+  to: number;
+  live: boolean;
+  geometry: LinkGeometry;
+  trails: string[];
+  marks: TrapMark[];
+}
+
+// Ribbon widths off the mock, widest strand first (the faint one underneath).
+const TRAILS: Record<TrapKind, readonly (readonly [number, number])[]> = {
+  rocket: [[5, 13], [3.4, 7.5]],
+  hole: [[22, 5], [13, 3]],
+};
+
+// [mark key, size spec, sits at the start?] — later marks paint on top.
+const PAIR_MARKS: Record<TrapKind, readonly (readonly [string, MarkSize, boolean])[]> = {
+  rocket: [
+    ['launchPad', MARK.pad, true],
+    ['rocketShip', MARK.ship, true],
+    ['landingPad', MARK.pad, false],
+    ['rocketLanded', MARK.landed, false],
+    ['dust', MARK.dust, false],
+  ],
+  hole: [
+    ['hole', MARK.hole, true],
+    ['holeExit', MARK.holeExit, false],
+  ],
+};
+
+/** Every trap's trails and marks, in the link layer's own pixels. */
+export function trapPairs(traps: Board, cell: number, live: LinkPair | null): TrapPair[] {
+  const build = (kind: TrapKind, from: number, to: number): TrapPair => {
+    const on = live?.from === from && live?.to === to;
+    const geometry = linkPath(from, to, cell, 0);
+    const k = (cell / MOCK_CELL) * (on ? 1 : 0.85);
+    return {
+      kind,
+      from,
+      to,
+      live: on,
+      geometry,
+      trails: TRAILS[kind].map(([start, end]) => ribbonPath(geometry, start * k, end * k)),
+      marks: PAIR_MARKS[kind].map(([key, spec, atStart]) => {
+        const at = atStart ? geometry.start : geometry.end;
+        return { key, x: at.x, y: at.y, size: markSize(cell, spec, on) };
+      }),
+    };
+  };
+
+  return [
+    ...traps.holes.map(([from, to]) => build('hole', from, to)),
+    ...traps.rockets.map(([from, to]) => build('rocket', from, to)),
+  ];
+}
+
 // Token seats as a fraction of the cell; the number owns the top-left.
 export interface Seat {
   x: number;
@@ -199,6 +265,10 @@ export function createBoard(traps: Board): BoardView {
   links.setAttribute('aria-hidden', 'true');
   board.append(links);
 
+  const marks = el('div', 'marks');
+  marks.setAttribute('aria-hidden', 'true');
+  board.append(marks);
+
   const overlay = el('div', 'overlay');
   board.append(overlay);
 
@@ -211,91 +281,58 @@ export function createBoard(traps: Board): BoardView {
   // Links
   // ============================================
 
-  function mark(key: string, at: { x: number; y: number }, size: number): SVGImageElement {
-    const image = svg('image');
-    image.setAttribute('href', asset('marks', key));
-    image.setAttribute('x', String(at.x - size / 2));
-    image.setAttribute('y', String(at.y - size / 2));
-    image.setAttribute('width', String(size));
-    image.setAttribute('height', String(size));
-    return image;
+  function trapImg(
+    pair: TrapPair,
+    mark: TrapMark,
+    origin: { x: number; y: number },
+  ): HTMLImageElement {
+    const img = document.createElement('img');
+    img.className = 'trap-mark';
+    img.src = asset('marks', mark.key);
+    img.alt = '';
+    img.draggable = false;
+    img.dataset.mark = mark.key;
+    img.dataset.from = String(pair.from);
+    img.dataset.to = String(pair.to);
+    img.dataset.live = String(pair.live);
+    img.style.width = `${mark.size}px`;
+    img.style.height = `${mark.size}px`;
+    img.style.transform =
+      `translate(${origin.x + mark.x}px, ${origin.y + mark.y}px) translate(-50%, -50%)`;
+    return img;
   }
 
-  function trail(
-    geometry: LinkGeometry,
-    pairs: [number, number][],
-    fill: string,
-    k: number,
-  ): SVGPathElement[] {
-    return pairs.map(([start, end], i) => {
-      const path = svg('path');
-      path.setAttribute('d', ribbonPath(geometry, start * k, end * k));
-      path.setAttribute('fill', fill);
-      path.setAttribute('opacity', i === 0 ? '0.3' : '0.9');
-      return path;
-    });
-  }
-
-  function put(
-    key: string,
-    at: { x: number; y: number },
-    spec: MarkSize,
-    cell: number,
-    live: boolean,
-  ): SVGImageElement {
-    return mark(key, at, markSize(cell, spec, live));
-  }
-
-  function drawRocket(from: number, to: number, cell: number, live: boolean): SVGGElement {
-    const k = live ? 1 : 0.85;
-    const geometry = linkPath(from, to, cell, 0);
-    const group = svg('g');
-
-    group.append(
-      ...trail(geometry, [[5, 13], [3.4, 7.5]], '#7ee7a4', (cell / MOCK_CELL) * k),
-      put('launchPad', geometry.start, MARK.pad, cell, live),
-      put('rocketShip', geometry.start, MARK.ship, cell, live),
-      put('landingPad', geometry.end, MARK.pad, cell, live),
-      put('rocketLanded', geometry.end, MARK.landed, cell, live),
-      put('dust', geometry.end, MARK.dust, cell, live),
-    );
-    return group;
-  }
-
-  function drawHole(from: number, to: number, cell: number, live: boolean): SVGGElement {
-    const k = live ? 1 : 0.85;
-    const geometry = linkPath(from, to, cell, 0);
-    const group = svg('g');
-
-    group.append(
-      ...trail(geometry, [[22, 5], [13, 3]], '#c9a6ff', (cell / MOCK_CELL) * k),
-      put('hole', geometry.start, MARK.hole, cell, live),
-      put('holeExit', geometry.end, MARK.holeExit, cell, live),
-    );
-    return group;
+  function trail(d: string, fill: string, faint: boolean): SVGPathElement {
+    const path = svg('path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', fill);
+    path.setAttribute('opacity', faint ? '0.3' : '0.9');
+    return path;
   }
 
   function drawLinks(): void {
     const box = links.getBoundingClientRect();
     const cell = cells.get(1)?.getBoundingClientRect().width ?? 0;
     links.replaceChildren();
+    marks.replaceChildren();
     if (box.width <= 0 || cell <= 0) return;
     links.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
 
-    const draw = (kind: 'rocket' | 'hole', from: number, to: number): void => {
-      const on = live?.from === from && live.to === to;
-      const group = kind === 'rocket'
-        ? drawRocket(from, to, cell, on)
-        : drawHole(from, to, cell, on);
-      group.setAttribute('class', 'link');
-      group.dataset.live = String(on);
-      group.dataset.from = String(from);
-      group.dataset.to = String(to);
-      links.append(group);
-    };
+    // The marks are html, so their origin is the board's, not the svg's.
+    const base = board.getBoundingClientRect();
+    const origin = { x: box.left - base.left, y: box.top - base.top };
 
-    traps.holes.forEach(([from, to]) => draw('hole', from, to));
-    traps.rockets.forEach(([from, to]) => draw('rocket', from, to));
+    for (const pair of trapPairs(traps, cell, live)) {
+      const group = svg('g');
+      group.setAttribute('class', 'link');
+      group.dataset.live = String(pair.live);
+      group.dataset.from = String(pair.from);
+      group.dataset.to = String(pair.to);
+      const fill = pair.kind === 'rocket' ? '#7ee7a4' : '#c9a6ff';
+      pair.trails.forEach((d, i) => group.append(trail(d, fill, i === 0)));
+      links.append(group);
+      for (const mark of pair.marks) marks.append(trapImg(pair, mark, origin));
+    }
   }
 
   function markLink(link: LinkPair | null): void {
