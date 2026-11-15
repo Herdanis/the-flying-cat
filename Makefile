@@ -1,10 +1,10 @@
 .DEFAULT_GOAL := up
-PORT ?= 8080  # compose pins 8080:80, so this only moves the printed URL
+PORT ?= 8080
 
 .PHONY: up down logs test dev
 
 up:
-	docker compose up -d --build
+	PORT=$(PORT) docker compose up -d --build
 	@echo "Dino Ladder running at http://localhost:$(PORT)"
 
 down:
