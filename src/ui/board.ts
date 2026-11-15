@@ -13,8 +13,7 @@ const DINO = '\u{1F996}';
 const DOT_MIN_TILE = 44;
 const DOT_MAX = 2;
 
-// Token centres, sizes and the chip corner, as a fraction of the cell.
-// 0.7 would clip the tile number, so the current token keeps the lower third.
+// Token seats as a fraction of the cell; 0.7 would clip the tile number.
 interface Seat {
   x: number;
   y: number;
@@ -36,6 +35,18 @@ export interface TokenPlan {
 export function tokenPlan(count: number, tilePx: number): TokenPlan {
   const dots = tilePx >= DOT_MIN_TILE ? Math.min(count, DOT_MAX) : 0;
   return { dots, chip: count - dots };
+}
+
+export interface SquarePlan extends TokenPlan {
+  gone: number;
+}
+
+/** What one square draws: crowd dots, hidden players, chip count. */
+export function squarePlan(group: number[], current: number, tilePx: number): SquarePlan {
+  // A lone player keeps a full-size token, so only a shared tile has crowd.
+  const others = group.length > 1 ? group.filter((i) => i !== current).length : 0;
+  const { dots, chip } = tokenPlan(others, tilePx);
+  return { dots, gone: others - dots, chip };
 }
 
 export interface BoardView {
@@ -194,16 +205,21 @@ export function createBoard(): BoardView {
     });
 
     const current = game.turn;
-    const plans = new Map<number, TokenPlan>();
+    const plans = new Map<number, SquarePlan>();
     for (const [square, group] of groups) {
-      const others = group.filter((i) => i !== current).length;
-      plans.set(square, tokenPlan(others, cellBox(square).size));
+      plans.set(square, squarePlan(group, current, cellBox(square).size));
+    }
+
+    for (const [square, badge] of badges) {
+      if (plans.has(square)) continue;
+      badge.remove();
+      badges.delete(square);
     }
 
     game.players.forEach((player, i) => {
       const square = displaySquare(player.position);
       const group = groups.get(square) ?? [];
-      const plan = plans.get(square) ?? tokenPlan(0, 0);
+      const plan = plans.get(square) ?? squarePlan([], current, 0);
       const token = tokens[i];
       const isCurrent = i === current;
       const dot = !isCurrent && group.length > 1;
