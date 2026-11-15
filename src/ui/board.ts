@@ -230,9 +230,17 @@ export function createBoard(traps: Board): BoardView {
     cell.dataset.square = String(square);
     cell.style.gridColumn = String(column);
     cell.style.gridRow = String(row);
-    cell.style.backgroundImage = `url("${groundFor(leg)}")`;
     cell.style.setProperty('--num', ink);
     cell.style.setProperty('--halo', ink === DARK_INK ? DARK_HALO : LIGHT_HALO);
+
+    // Html ground, not a css background: every engine paints an img.
+    const ground = document.createElement('img');
+    ground.className = 'ground';
+    ground.src = groundFor(leg);
+    ground.alt = '';
+    ground.setAttribute('aria-hidden', 'true');
+    ground.draggable = false;
+    cell.append(ground);
 
     const num = el('span', 'cell-num', String(square));
     num.setAttribute('aria-hidden', 'true');

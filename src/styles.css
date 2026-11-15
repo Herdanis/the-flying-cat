@@ -440,11 +440,17 @@ button {
   position: relative;
   padding: calc(var(--cell) * 0.05);
   border-radius: calc(var(--cell) * 0.16);
-  background-size: cover;
-  background-position: center;
-  background-origin: content-box;
-  background-clip: content-box;
-  background-repeat: no-repeat;
+}
+
+/* The tile's ground: clipped to the tile's rounding, under every other layer. */
+.ground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Same rounding as the tile; `inherit` collapses to 0 in moli's engine. */
+  border-radius: calc(var(--cell) * 0.16);
 }
 
 .cell[data-dir]::after {
