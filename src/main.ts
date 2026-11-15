@@ -8,6 +8,7 @@ import type { MoveResult } from './game/rules';
 import { Game } from './game/state';
 import { displaySquare, createBoard, type BoardView } from './ui/board';
 import { createDice } from './ui/dice';
+import { speaker } from './ui/icons';
 import { el, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
 import { animateMove, movePath } from './ui/motion';
 import { isMuted, play, setMuted } from './ui/sound';
@@ -33,7 +34,7 @@ function createMute(): HTMLButtonElement {
 
   const paint = (): void => {
     const off = isMuted();
-    button.textContent = off ? '\u{1F507}' : '\u{1F50A}';
+    button.innerHTML = speaker(off);
     button.setAttribute('aria-label', off ? 'Unmute sound' : 'Mute sound');
     button.setAttribute('aria-pressed', String(off));
   };
@@ -146,9 +147,11 @@ function startGame(count: number): void {
       startPicker();
     });
 
-    card.append(dino, el('p', 'banner-name', `${winner.name} wins`), again, alt);
+    const name = el('h2', 'banner-name', `${winner.name} wins!`);
+    card.append(dino, name, again, alt);
     banner.append(card);
     document.body.append(banner);
+    again.focus();
   }
 
   paint();
