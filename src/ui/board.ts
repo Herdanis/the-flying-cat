@@ -25,8 +25,6 @@ const BRIGHT_LEGS = new Set([4, 5, 6, 9]);
 const MOCK_CELL = 54;
 // Room the token's ring takes outside its disc.
 const RING = 2;
-// The link layer drops this share of a cell so its marks clear the number.
-export const LINK_DROP = 0.14;
 
 export interface MarkSize {
   frac: number;
@@ -34,14 +32,14 @@ export interface MarkSize {
 }
 
 // Trap marks: a share of the cell, never under the floor a phone can show.
-// Both holes share a look but not a floor: the one you fall into stays bigger.
+// The source hole is the big one; the exit keeps its own, smaller floor.
 export const MARK = {
-  hole: { frac: 0.58, floor: 18 },
-  holeDrop: { frac: 0.46, floor: 13 },
-  pad: { frac: 0.56, floor: 16 },
-  ship: { frac: 0.48, floor: 14 },
-  landed: { frac: 0.42, floor: 14 },
-  dust: { frac: 0.32, floor: 10 },
+  hole: { frac: 0.8, floor: 22 },
+  holeExit: { frac: 0.42, floor: 12 },
+  pad: { frac: 0.68, floor: 18 },
+  ship: { frac: 0.6, floor: 15 },
+  landed: { frac: 0.5, floor: 15 },
+  dust: { frac: 0.4, floor: 10 },
 } satisfies Record<string, MarkSize>;
 
 /** Mark size in pixels: live marks full, the rest a touch smaller, floors held. */
@@ -199,9 +197,6 @@ export function createBoard(traps: Board): BoardView {
   const links = svg('svg');
   links.setAttribute('class', 'links');
   links.setAttribute('aria-hidden', 'true');
-  // One shift for the whole layer, so every trail and its marks move together.
-  const rig = svg('g');
-  links.append(rig);
   board.append(links);
 
   const overlay = el('div', 'overlay');
@@ -275,7 +270,7 @@ export function createBoard(traps: Board): BoardView {
     group.append(
       ...trail(geometry, [[22, 5], [13, 3]], '#c9a6ff', (cell / MOCK_CELL) * k),
       put('hole', geometry.start, MARK.hole, cell, live),
-      put('hole', geometry.end, MARK.holeDrop, cell, live),
+      put('holeExit', geometry.end, MARK.holeExit, cell, live),
     );
     return group;
   }
@@ -283,10 +278,9 @@ export function createBoard(traps: Board): BoardView {
   function drawLinks(): void {
     const box = links.getBoundingClientRect();
     const cell = cells.get(1)?.getBoundingClientRect().width ?? 0;
-    rig.replaceChildren();
+    links.replaceChildren();
     if (box.width <= 0 || cell <= 0) return;
     links.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
-    rig.setAttribute('transform', `translate(0 ${cell * LINK_DROP})`);
 
     const draw = (kind: 'rocket' | 'hole', from: number, to: number): void => {
       const on = live?.from === from && live.to === to;
@@ -297,7 +291,7 @@ export function createBoard(traps: Board): BoardView {
       group.dataset.live = String(on);
       group.dataset.from = String(from);
       group.dataset.to = String(to);
-      rig.append(group);
+      links.append(group);
     };
 
     traps.holes.forEach(([from, to]) => draw('hole', from, to));
@@ -417,7 +411,7 @@ export function createBoard(traps: Board): BoardView {
   /** Full repaint: also the resize path, since a tile can cross the dot threshold. */
   function paint(game: Game): void {
     ensurePieces(game.players.length);
-    if (rig.childElementCount === 0) drawLinks();
+    if (links.childElementCount === 0) drawLinks();
     paintChips(planPieces(game));
     game.players.forEach((player, i) => place(i, displaySquare(player.position), true));
   }

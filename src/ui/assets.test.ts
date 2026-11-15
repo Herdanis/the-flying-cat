@@ -9,7 +9,7 @@ const USED: Record<Group, string[]> = {
   dinos: ['rex', 'stego', 'trike', 'long', 'ptero', 'anky'],
   grounds: ['earth', 'orbit', 'moon', 'belt', 'mars', 'jupiter', 'saturn', 'neptune', 'deep', 'star'],
   sky: ['sun', 'moon', 'planet', 'satellite', 'comet', 'nebulaA', 'nebulaB'],
-  marks: ['rocketShip', 'rocketLanded', 'launchPad', 'landingPad', 'dust', 'hole', 'star'],
+  marks: ['rocketShip', 'rocketLanded', 'launchPad', 'landingPad', 'dust', 'hole', 'holeExit', 'star'],
 };
 
 describe('assets', () => {

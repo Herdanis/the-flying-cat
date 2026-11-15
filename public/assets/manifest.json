@@ -35,6 +35,7 @@
     "landingPad": "assets/marks/landingPad.svg",
     "dust": "assets/marks/dust.svg",
     "hole": "assets/marks/hole.svg",
+    "holeExit": "assets/marks/holeExit.svg",
     "star": "assets/marks/star.svg"
   }
 }

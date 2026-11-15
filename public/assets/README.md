@@ -62,7 +62,8 @@ outside it risks clipping or crowding a neighbour.
 | `marks/launchPad` | 100 × 100 | 6 units | transparent background, pad below, gantry and beacon to the right |
 | `marks/landingPad` | 100 × 100 | 6 units | transparent background, square ring with four landing ticks, no perspective |
 | `marks/dust` | 100 × 100 | 6 units | transparent background, a puff of pale dots |
-| `marks/hole` | 100 × 100 | 6 units | transparent background, dark centre with a violet rim |
+| `marks/hole` | 100 × 100 | 6 units | transparent background, dark centre, solid bright ring, flare rings outside it (source only) |
+| `marks/holeExit` | 100 × 100 | 6 units | transparent background, dark centre with a thin dim rim, dashed gold ring and three radial ticks outside it (destination only) |
 | `marks/star` | 100 × 100 | 6 units | transparent background, flat pale-gold star with a face |
 
 Grounds are drawn edge to edge on purpose: the board clips each one to a
