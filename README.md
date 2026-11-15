@@ -3,41 +3,55 @@
 A dinosaur astronaut flies from Earth to a distant Star. Rockets zoom you
 forward, black holes drag you back, and you must land on the Star exactly.
 
-Snakes and Ladders, in a space suit, in your terminal.
+Snakes and Ladders, in a space suit, in your browser.
 
 ## Play
 
 ```bash
-cargo run -- --players 3
+npm install
+npm run dev
 ```
 
-| Key | What it does |
-|---|---|
-| `SPACE` | roll the dice (also skips the roll animation) |
-| `n` | start a new game |
-| `?` | show or hide the help |
-| `q` | quit |
+Open the address it prints. Pick how many dinosaurs are playing, then tap the
+big dice. That is the whole interface — no reading required.
 
-Two to six players, taking turns on one keyboard.
+Two to six players take turns on one device.
 
-## Options
+## Build
 
 ```bash
-dino-ladder --players 4     # 2 to 6, default 2
-dino-ladder --ascii         # plain characters, for terminals without Unicode or emoji
-dino-ladder --help
+npm run build      # static files in dist/
+npm run preview    # serve the built files locally
 ```
 
-Needs a terminal at least 80 columns wide and 24 rows tall. Below that it
-shows a message instead of a broken board.
+The output is plain static files, so it can be served from anywhere. No
+server code, no runtime dependencies.
+
+## The rules
+
+Unchanged from the original terminal version:
+
+- Roll 1–6 and advance that many squares.
+- A rocket (⇧) lifts you forward, a black hole (◉) drags you back.
+- You must land on the Star (★) exactly. Overshooting bounces you back by the
+  remainder, and that bounce never triggers a rocket or black hole.
+- Square 1 is bottom-left, square 100 closes the top row.
 
 ## How it works
 
-The rules are pure and live in `src/game/` — no terminal code, unit tested.
-The board, dice and sprites live in `src/ui/` and never decide anything about
-the game. `src/app.rs` connects the two: it reads a key, asks the game for a
-result, and draws what comes back.
+`src/game/` holds the rules — pure TypeScript, no DOM, no browser API, and no
+imports from anywhere else. It is tested on its own.
+
+`src/ui/` draws. The board is a CSS grid of 100 cells; the dinosaurs live in
+an overlay layer above it and move with `transform`, which is what lets the
+current player's dino stay full size while other players on the same square
+shrink to dots.
 
 ```bash
-cargo test      # rules, geometry and the render path, all headless
+npm test      # rules, state and animation paths — no browser needed
 ```
+
+## The terminal version
+
+The original TUI lives in git history and on the `tui` branch. It is not
+maintained; the rules here are the reference now.
