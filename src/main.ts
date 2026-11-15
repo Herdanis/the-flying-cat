@@ -1,0 +1,6 @@
+// ============================================
+// Boot
+// ============================================
+
+const app = document.querySelector<HTMLElement>('#app');
+if (app) app.textContent = 'Dino Ladder';
