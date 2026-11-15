@@ -32,6 +32,14 @@ npm run preview    # serve the built files locally
 The output is plain static files, so it can be served from anywhere. No
 server code, no runtime dependencies.
 
+## Docker
+
+```bash
+docker compose up -d --build
+```
+
+Then open `http://localhost:8080`. `docker compose down` stops it.
+
 ## The rules
 
 Unchanged from the original terminal version:
