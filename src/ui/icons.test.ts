@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { hole, rocket, speaker, star } from './icons';
+import { speaker } from './icons';
 
 describe('icons', () => {
-  test('each icon is a self-contained svg with no text glyph', () => {
-    for (const svg of [rocket(), hole(), star(), speaker(false)]) {
+  test('the speaker is a self-contained svg with no text glyph', () => {
+    for (const svg of [speaker(false), speaker(true)]) {
       expect(svg.startsWith('<svg')).toBe(true);
       expect(svg.endsWith('</svg>')).toBe(true);
       expect(svg).toContain('viewBox="0 0 24 24"');

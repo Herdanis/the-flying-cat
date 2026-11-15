@@ -1,5 +1,10 @@
 import { expect, test } from 'vitest';
-import { dirToNext, badgesToDrop, squarePlan, tokenPlan } from './board';
+import { dirToNext, badgesToDrop, numberInk, squarePlan, tokenPlan } from './board';
+
+test('the number ink flips on the four bright grounds', () => {
+  for (const leg of [4, 5, 6, 9]) expect(numberInk(leg)).toBe('#2a1f08');
+  for (const leg of [0, 1, 2, 3, 7, 8]) expect(numberInk(leg)).toBe('#e8eeff');
+});
 
 test('the track turns the way the snakes-and-ladders route does', () => {
   expect(dirToNext(1)).toBe('right');

@@ -5,7 +5,9 @@
 import './styles.css';
 import { LAST_SQUARE } from './game/board';
 import type { MoveResult } from './game/rules';
+import { SPECIES } from './game/species';
 import { Game } from './game/state';
+import { asset } from './ui/assets';
 import { displaySquare, createBoard, type BoardView } from './ui/board';
 import { createDice } from './ui/dice';
 import { speaker } from './ui/icons';
@@ -14,7 +16,14 @@ import { animateMove, movePath } from './ui/motion';
 import { isMuted, play, setMuted } from './ui/sound';
 import { showStart } from './ui/start';
 
-const DINO = '\u{1F996}';
+const CONFETTI = ['#ffd23f', '#57e389', '#43b7ff', '#ff5f6d', '#c58bff'];
+const SKY: [string, string][] = [
+  ['sun', 'sky-sun'],
+  ['moon', 'sky-moon'],
+  ['planet', 'sky-planet'],
+  ['satellite', 'sky-satellite'],
+  ['comet', 'sky-comet'],
+];
 const reduced = prefersReducedMotion();
 
 let live: { board: BoardView; game: Game } | null = null;
@@ -22,6 +31,48 @@ let live: { board: BoardView; game: Game } | null = null;
 function remeasure(): void {
   if (!live || !live.board.el.isConnected) return;
   live.board.reflow(live.game);
+}
+
+// ============================================
+// Sky
+// ============================================
+
+function starField(): string {
+  let seed = 99;
+  const rand = (): number => {
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    return seed / 2 ** 32;
+  };
+  let out = '';
+  for (let i = 0; i < 90; i++) {
+    out += `<circle cx="${(rand() * 1000).toFixed(1)}" cy="${(rand() * 1000).toFixed(1)}"` +
+      ` r="${(0.5 + rand() * 1.6).toFixed(1)}" opacity="${(0.2 + rand() * 0.6).toFixed(2)}"/>`;
+  }
+  return out;
+}
+
+function createSky(): void {
+  const sky = el('div', 'sky');
+  sky.setAttribute('aria-hidden', 'true');
+
+  const stars = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  stars.setAttribute('class', 'stars');
+  stars.setAttribute('viewBox', '0 0 1000 1000');
+  stars.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  stars.setAttribute('fill', '#fff');
+  stars.innerHTML = starField();
+  sky.append(stars);
+
+  for (const [key, name] of SKY) {
+    const object = document.createElement('img');
+    object.className = `sky-object ${name}`;
+    object.src = asset('sky', key);
+    object.alt = '';
+    object.draggable = false;
+    sky.append(object);
+  }
+
+  document.body.prepend(sky);
 }
 
 // ============================================
@@ -61,9 +112,14 @@ function startGame(count: number): void {
   const colors = playerColors();
   const dice = createDice(() => void roll());
 
+  const turnFace = document.createElement('img');
+  turnFace.className = 'turn-face';
+  turnFace.alt = '';
+  const turnDino = el('span', 'turn-dino');
+  turnDino.append(turnFace);
+
   const turn = el('div', 'turn');
   turn.setAttribute('aria-live', 'polite');
-  const turnDino = el('span', 'turn-dino', DINO);
   const turnName = el('span', 'turn-name');
   turn.append(turnDino, turnName);
 
@@ -83,6 +139,7 @@ function startGame(count: number): void {
     board.render(game);
     const player = game.current();
     turnDino.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
+    turnFace.src = asset('dinos', SPECIES[player.colorIndex % SPECIES.length].key);
     turnName.textContent = `${player.name}'s turn`;
     log.textContent = game.log.at(-1) ?? '';
   }
@@ -115,6 +172,8 @@ function startGame(count: number): void {
     if (result.kind === 'boosted') play('rocket');
     if (result.kind === 'dragged') play('hole');
 
+    const used = result.kind === 'boosted' || result.kind === 'dragged';
+    board.markLink(used ? { from: from + face, to: result.at } : null);
     paint();
     if (game.winner !== null) {
       play('win');
@@ -128,9 +187,24 @@ function startGame(count: number): void {
     banner.setAttribute('role', 'alert');
 
     const card = el('div', 'banner-card');
+    const confetti = el('div', 'confetti');
+    confetti.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 18; i++) {
+      const bit = el('i', 'confetti-bit');
+      bit.style.setProperty('--x', `${(i * 37) % 100}%`);
+      bit.style.setProperty('--delay', `${(i % 6) * 0.24}s`);
+      bit.style.setProperty('--spin', `${180 + (i % 5) * 90}deg`);
+      bit.style.setProperty('--col', CONFETTI[i % CONFETTI.length]);
+      confetti.append(bit);
+    }
+
     const dino = el('div', 'banner-dino');
     dino.style.setProperty('--c', colors[winner.colorIndex] ?? colors[0]);
-    dino.append(el('span', '', DINO));
+    const face = document.createElement('img');
+    face.src = asset('dinos', SPECIES[winner.colorIndex % SPECIES.length].key);
+    face.alt = '';
+    face.draggable = false;
+    dino.append(face);
 
     const again = el('button', 'banner-again', '\u21BB another game');
     again.type = 'button';
@@ -148,7 +222,7 @@ function startGame(count: number): void {
 
     const name = el('h2', 'banner-name', `${winner.name} wins!`);
     card.append(dino, name, again, alt);
-    banner.append(card);
+    banner.append(confetti, card);
     document.body.append(banner);
     again.focus();
   }
@@ -162,6 +236,7 @@ function startPicker(): void {
 }
 
 function boot(): void {
+  createSky();
   startPicker();
 
   onViewportChange(remeasure);

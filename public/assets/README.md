@@ -12,11 +12,8 @@ the next page load uses it. No rebuild, no code change.
 
 To point a key at a different file, edit `manifest.json` and run
 `npm run build`. The manifest is baked into the bundle at build time, so
-editing `dist/assets/manifest.json` alone does nothing.
-
-Any format a browser can render works: `.svg`, `.png`, `.webp`, `.avif`,
-`.jpg`, an animated `.gif`. Write the real extension in the manifest. Keep the
-canvas proportions in the table so the layout does not shift.
+editing `dist/assets/manifest.json` alone does nothing. Every entry is an
+`.svg` file; the asset test pins the exact `assets/<group>/<key>.svg` path.
 
 Each `.svg` here is a standalone document: it renders when opened in a browser
 on its own, its colours are written in the file, and it pulls in nothing
@@ -37,12 +34,12 @@ outside it risks clipping or crowding a neighbour.
 
 | Key | Canvas | Safe area | A replacement must keep |
 |---|---|---|---|
-| `dinos/rex` | 112 × 112 | body and helmet ≥ 6 units from every edge | transparent background, one dino facing right, head top-right |
-| `dinos/stego` | 112 × 112 | same | same |
-| `dinos/trike` | 112 × 112 | same | same |
-| `dinos/long` | 112 × 112 | same | same, long neck |
-| `dinos/ptero` | 112 × 112 | same | same, wings spread wide |
-| `dinos/anky` | 112 × 112 | same | same, tail club left |
+| `dinos/rex` | 112 × 112 | body and helmet ≥ 4 units from every edge | transparent background, one dino facing right, head top-right |
+| `dinos/stego` | 112 × 112 | same, margin ≥ 4 units | same |
+| `dinos/trike` | 112 × 112 | same, margin ≥ 4 units | same |
+| `dinos/long` | 112 × 112 | same, margin ≥ 4 units | same, long neck |
+| `dinos/ptero` | 112 × 112 | same, margin ≥ 4 units | same, wings spread wide |
+| `dinos/anky` | 112 × 112 | same, margin ≥ 4 units | same, tail club left |
 | `grounds/earth` | 100 × 100 | none — fill the square | opaque ocean blue, no transparency |
 | `grounds/orbit` | 100 × 100 | none | opaque, arc across the square |
 | `grounds/moon` | 100 × 100 | none | opaque grey, craters |

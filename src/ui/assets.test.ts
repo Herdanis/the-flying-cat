@@ -13,11 +13,10 @@ const USED: Record<Group, string[]> = {
 };
 
 describe('assets', () => {
-  test('every group and key the app uses resolves to an svg under assets/', () => {
+  test('every group and key the app uses resolves to its own svg under assets/', () => {
     for (const [group, keys] of Object.entries(USED) as [Group, string[]][]) {
       for (const key of keys) {
-        const path = asset(group, key);
-        expect(path, `${group}/${key}`).toMatch(/^assets\/.+\.svg$/);
+        expect(asset(group, key), `${group}/${key}`).toBe(`assets/${group}/${key}.svg`);
       }
     }
   });
@@ -31,6 +30,10 @@ describe('assets', () => {
   test('an unknown key throws an error that names it', () => {
     expect(() => asset('dinos', 'nope')).toThrow('unknown asset: dinos/nope');
     expect(() => asset('marks', 'rocket')).toThrow('unknown asset: marks/rocket');
+  });
+
+  test('a whole group missing from the manifest throws the same clean error', () => {
+    expect(() => asset('nope' as Group, 'rex')).toThrow('unknown asset: nope/rex');
   });
 
   test('every path in the manifest is a file that exists', () => {

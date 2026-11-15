@@ -4,28 +4,37 @@
 
 import { LAST_SQUARE, LEGS } from '../game/board';
 import type { Board } from '../game/randomBoard';
+import { SPECIES } from '../game/species';
 import type { Game } from '../game/state';
-import { hole, rocket, star } from './icons';
-import { el } from './layout';
+import { asset, groundFor } from './assets';
+import { el, playerColors } from './layout';
+import { linkPath, ribbonPath, squareCentre, type LinkGeometry } from './links';
 
 export type TrackDir = 'right' | 'left' | 'up';
 
-const DINO = '\u{1F996}';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 const DOT_MIN_TILE = 44;
 const DOT_MAX = 2;
+const DARK_INK = '#2a1f08';
+const LIGHT_INK = '#e8eeff';
+const DARK_HALO = '#ffe9c9';
+const LIGHT_HALO = '#101a3a';
+// Mars, Jupiter, Saturn and Star are bright enough for dark numbers.
+const BRIGHT_LEGS = new Set([4, 5, 6, 9]);
+// The mock's tile size; every mark is measured against it.
+const MOCK_CELL = 54;
 
-// Token seats as a fraction of the cell; 0.7 would clip the tile number.
+// Token seats as a fraction of the cell; the number owns the top-left.
 interface Seat {
   x: number;
   y: number;
   size: number;
 }
 
-// The chip owns the top-right corner, so the dots stack below it and clear the dino.
 const SEAT = {
-  current: { x: 0.4, y: 0.66, size: 0.6 } satisfies Seat,
-  other: { x: 0.5, y: 0.63, size: 0.52 } satisfies Seat,
-  dot: { x: 0.81, y: 0.44, size: 0.15, step: 0.2 } satisfies Seat & { step: number },
+  current: { x: 0.4, y: 0.7, size: 0.62 } satisfies Seat,
+  other: { x: 0.42, y: 0.66, size: 0.52 } satisfies Seat,
+  dot: { x: 0.82, y: 0.52, size: 0.34, step: 0.3 } satisfies Seat & { step: number },
   chip: { x: 0.97, y: 0.03 },
 };
 
@@ -57,14 +66,6 @@ export function badgesToDrop(have: Iterable<number>, want: Iterable<number>): nu
   return [...have].filter((square) => !keep.has(square));
 }
 
-export interface BoardView {
-  el: HTMLElement;
-  render(game: Game): void;
-  tokenRect(square: number): { x: number; y: number };
-  place(playerIndex: number, square: number, instant?: boolean): void;
-  reflow(game: Game): void;
-}
-
 export function displaySquare(position: number): number {
   return position === 0 ? 1 : position;
 }
@@ -83,46 +84,58 @@ export function dirToNext(square: number): TrackDir | null {
   return leg % 2 === 0 ? 'right' : 'left';
 }
 
+/** Number colour for a leg: dark on the bright grounds, light on the rest. */
+export function numberInk(leg: number): string {
+  return BRIGHT_LEGS.has(leg) ? DARK_INK : LIGHT_INK;
+}
+
+export interface LinkPair {
+  from: number;
+  to: number;
+}
+
+export interface BoardView {
+  el: HTMLElement;
+  render(game: Game): void;
+  place(playerIndex: number, square: number, instant?: boolean): void;
+  reflow(game: Game): void;
+  markLink(link: LinkPair | null): void;
+}
+
+function svg<K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] {
+  return document.createElementNS(SVG_NS, tag);
+}
+
 export function createBoard(traps: Board): BoardView {
   const board = el('div', 'board');
   board.setAttribute('role', 'img');
   board.setAttribute('aria-label', `Board of ${LAST_SQUARE} squares from Earth to Star`);
 
-  const rocketAt = new Set(traps.rockets.map(([from]) => from));
-  const holeAt = new Set(traps.holes.map(([from]) => from));
   const cells = new Map<number, HTMLElement>();
 
   for (let square = 1; square <= LAST_SQUARE; square++) {
     const { column, row } = cellGridPos(square);
+    const leg = Math.floor((square - 1) / 10);
+    const ink = numberInk(leg);
     const cell = el('div', 'cell');
     cell.dataset.square = String(square);
     cell.style.gridColumn = String(column);
     cell.style.gridRow = String(row);
-    if (square % 2 === 0) cell.classList.add('alt');
-    const dir = dirToNext(square);
-    if (dir) cell.dataset.dir = dir;
+    cell.style.backgroundImage = `url("${groundFor(leg)}")`;
+    cell.style.setProperty('--num', ink);
+    cell.style.setProperty('--halo', ink === DARK_INK ? DARK_HALO : LIGHT_HALO);
 
     const num = el('span', 'cell-num', String(square));
     num.setAttribute('aria-hidden', 'true');
     cell.append(num);
 
-    let marker = '';
-    if (rocketAt.has(square)) {
-      cell.classList.add('rocket');
-      marker = rocket();
-    } else if (holeAt.has(square)) {
-      cell.classList.add('hole');
-      marker = hole();
-    } else if (square === LAST_SQUARE) {
-      cell.classList.add('star');
-      marker = star();
-    }
-
-    if (marker) {
-      const mark = el('span', 'cell-mark');
-      mark.setAttribute('aria-hidden', 'true');
-      mark.innerHTML = marker;
-      cell.append(mark);
+    if (square === LAST_SQUARE) {
+      const star = document.createElement('img');
+      star.className = 'cell-mark';
+      star.src = asset('marks', 'star');
+      star.alt = '';
+      star.draggable = false;
+      cell.append(star);
     }
 
     cells.set(square, cell);
@@ -135,23 +148,125 @@ export function createBoard(traps: Board): BoardView {
     board.append(label);
   });
 
+  const links = svg('svg');
+  links.setAttribute('class', 'links');
+  links.setAttribute('aria-hidden', 'true');
+  board.append(links);
+
   const overlay = el('div', 'overlay');
   board.append(overlay);
 
-  const tokens: HTMLElement[] = [];
+  const pieces: HTMLElement[] = [];
   const badges = new Map<number, HTMLElement>();
-  let colors: string[] = [];
+  const colors = playerColors();
+  let live: LinkPair | null = null;
 
-  function ensureTokens(count: number): void {
-    if (colors.length === 0) {
-      const style = getComputedStyle(document.documentElement);
-      colors = [1, 2, 3, 4, 5, 6].map((n) => style.getPropertyValue(`--p${n}`).trim());
-    }
-    while (tokens.length < count) {
-      const token = el('div', 'token');
-      token.append(el('div', 'face', DINO));
-      tokens.push(token);
-      overlay.append(token);
+  // ============================================
+  // Links
+  // ============================================
+
+  function mark(key: string, at: { x: number; y: number }, size: number): SVGImageElement {
+    const image = svg('image');
+    image.setAttribute('href', asset('marks', key));
+    image.setAttribute('x', String(at.x - size / 2));
+    image.setAttribute('y', String(at.y - size / 2));
+    image.setAttribute('width', String(size));
+    image.setAttribute('height', String(size));
+    return image;
+  }
+
+  function trail(
+    geometry: LinkGeometry,
+    pairs: [number, number][],
+    fill: string,
+    k: number,
+  ): SVGPathElement[] {
+    return pairs.map(([start, end], i) => {
+      const path = svg('path');
+      path.setAttribute('d', ribbonPath(geometry, start * k, end * k));
+      path.setAttribute('fill', fill);
+      path.setAttribute('opacity', i === 0 ? '0.2' : '0.36');
+      return path;
+    });
+  }
+
+  function drawRocket(from: number, to: number, cell: number, k: number): SVGGElement {
+    const geometry = linkPath(from, to, cell, 0);
+    const scale = (cell / MOCK_CELL) * k;
+    const start = squareCentre(from, cell, 0);
+    const padY = start.y + cell * 0.24;
+    const dropY = geometry.end.y + cell * 0.24;
+    const group = svg('g');
+
+    group.append(
+      ...trail(geometry, [[5, 13], [3.4, 7.5]], '#7ee7a4', scale),
+      mark('launchPad', { x: start.x, y: padY }, cell * 0.44 * k),
+      mark('rocketShip', { x: start.x, y: padY - cell * 0.22 * k }, cell * 0.38 * k),
+      mark('landingPad', { x: geometry.end.x, y: dropY }, cell * 0.42 * k),
+      mark('rocketShip', { x: geometry.end.x, y: dropY - cell * 0.2 * k }, cell * 0.36 * k),
+      mark('dust', { x: geometry.end.x, y: dropY + cell * 0.08 * k }, cell * 0.3 * k),
+    );
+    return group;
+  }
+
+  function drawHole(from: number, to: number, cell: number, k: number): SVGGElement {
+    const geometry = linkPath(from, to, cell, 0);
+    const scale = (cell / MOCK_CELL) * k;
+    const start = squareCentre(from, cell, 0);
+    const group = svg('g');
+
+    group.append(
+      ...trail(geometry, [[22, 5], [13, 3]], '#c9a6ff', scale),
+      mark('hole', { x: start.x, y: start.y + cell * 0.18 * k }, cell * 0.5 * k),
+      mark('hole', { x: geometry.end.x, y: geometry.end.y + cell * 0.18 * k }, cell * 0.38 * k),
+    );
+    return group;
+  }
+
+  function drawLinks(): void {
+    const box = links.getBoundingClientRect();
+    const cell = cells.get(1)?.getBoundingClientRect().width ?? 0;
+    links.replaceChildren();
+    if (box.width <= 0 || cell <= 0) return;
+    links.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+
+    const draw = (kind: 'rocket' | 'hole', from: number, to: number): void => {
+      const on = live?.from === from && live.to === to;
+      const group = kind === 'rocket'
+        ? drawRocket(from, to, cell, on ? 1 : 0.74)
+        : drawHole(from, to, cell, on ? 1 : 0.74);
+      group.setAttribute('class', 'link');
+      group.dataset.live = String(on);
+      group.dataset.from = String(from);
+      group.dataset.to = String(to);
+      links.append(group);
+    };
+
+    traps.holes.forEach(([from, to]) => draw('hole', from, to));
+    traps.rockets.forEach(([from, to]) => draw('rocket', from, to));
+  }
+
+  function markLink(link: LinkPair | null): void {
+    live = link;
+    drawLinks();
+  }
+
+  // ============================================
+  // Pieces
+  // ============================================
+
+  function ensurePieces(count: number): void {
+    while (pieces.length < count) {
+      const species = SPECIES[pieces.length % SPECIES.length];
+      const piece = el('div', 'token');
+      const face = document.createElement('img');
+      face.className = 'face';
+      face.src = asset('dinos', species.key);
+      face.alt = '';
+      face.draggable = false;
+      piece.append(face);
+      pieces.push(piece);
+      overlay.append(piece);
     }
   }
 
@@ -163,35 +278,30 @@ export function createBoard(traps: Board): BoardView {
     return { x: c.left - o.left, y: c.top - o.top, size: c.width };
   }
 
-  function tokenRect(square: number): { x: number; y: number } {
-    const { x, y } = cellBox(square);
-    return { x, y };
-  }
-
   function place(playerIndex: number, square: number, instant = false): void {
-    const token = tokens[playerIndex];
-    if (!token) return;
+    const piece = pieces[playerIndex];
+    if (!piece) return;
 
     const box = cellBox(square);
-    const board = overlay.getBoundingClientRect();
-    const slot = Number(token.dataset.slot ?? '0');
-    const seat = token.classList.contains('dot')
+    const frame = overlay.getBoundingClientRect();
+    const slot = Number(piece.dataset.slot ?? '0');
+    const seat = piece.classList.contains('dot')
       ? { ...SEAT.dot, y: SEAT.dot.y + slot * SEAT.dot.step }
-      : token.classList.contains('current')
+      : piece.classList.contains('current')
         ? SEAT.current
         : SEAT.other;
 
     const size = box.size * seat.size;
     const half = size / 2;
-    const cx = Math.min(Math.max(box.x + box.size * seat.x, half), board.width - half);
-    const cy = Math.min(Math.max(box.y + box.size * seat.y, half), board.height - half);
+    const cx = Math.min(Math.max(box.x + box.size * seat.x, half), frame.width - half);
+    const cy = Math.min(Math.max(box.y + box.size * seat.y, half), frame.height - half);
 
-    token.style.setProperty('--tk', `${size}px`);
-    if (instant) token.classList.add('no-anim');
-    token.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+    piece.style.setProperty('--tk', `${size}px`);
+    if (instant) piece.classList.add('no-anim');
+    piece.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
     if (instant) {
-      void token.offsetWidth;
-      token.classList.remove('no-anim');
+      void piece.offsetWidth;
+      piece.classList.remove('no-anim');
     }
   }
 
@@ -201,7 +311,7 @@ export function createBoard(traps: Board): BoardView {
       `translate(${x + size * SEAT.chip.x}px, ${y + size * SEAT.chip.y}px) translate(-100%, 0)`;
   }
 
-  function planTokens(game: Game): Map<number, SquarePlan> {
+  function planPieces(game: Game): Map<number, SquarePlan> {
     const groups = new Map<number, number[]>();
     game.players.forEach((player, i) => {
       const square = displaySquare(player.position);
@@ -219,15 +329,15 @@ export function createBoard(traps: Board): BoardView {
       const square = displaySquare(player.position);
       const group = groups.get(square) ?? [];
       const plan = plans.get(square) ?? squarePlan([], game.turn, 0);
-      const token = tokens[i];
+      const piece = pieces[i];
       const dot = i !== game.turn && group.length > 1;
       const slot = group.filter((n) => n !== game.turn).indexOf(i);
 
-      token.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
-      token.classList.toggle('current', i === game.turn);
-      token.classList.toggle('dot', dot);
-      token.classList.toggle('gone', dot && slot >= plan.dots);
-      if (dot) token.dataset.slot = String(slot);
+      piece.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
+      piece.classList.toggle('current', i === game.turn);
+      piece.classList.toggle('dot', dot);
+      piece.classList.toggle('gone', dot && slot >= plan.dots);
+      if (dot) piece.dataset.slot = String(slot);
     });
 
     return plans;
@@ -258,10 +368,16 @@ export function createBoard(traps: Board): BoardView {
 
   /** Full repaint: also the resize path, since a tile can cross the dot threshold. */
   function paint(game: Game): void {
-    ensureTokens(game.players.length);
-    paintChips(planTokens(game));
+    ensurePieces(game.players.length);
+    if (links.childElementCount === 0) drawLinks();
+    paintChips(planPieces(game));
     game.players.forEach((player, i) => place(i, displaySquare(player.position), true));
   }
 
-  return { el: board, render: paint, tokenRect, place, reflow: paint };
+  function reflow(game: Game): void {
+    drawLinks();
+    paint(game);
+  }
+
+  return { el: board, render: paint, place, reflow, markLink };
 }

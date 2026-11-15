@@ -59,19 +59,21 @@ grid, and which way the track leaves it, is drawing code instead: `cellGridPos`
 and `dirToNext` live in `src/ui/board.ts`, next to the column and row they
 assign.
 
-`src/ui/` draws. The board is fat rounded tiles on a star-chart backdrop, with a
-dashed track joining consecutive squares and the leg names running down the
-left side, in a column that hides below 420px. None of that look is markup: a
-`::before` on each cell draws the rounded tile and its tint, and a single dashed
-border on `::after` draws the track segment. No image assets.
+`src/ui/` draws. Every picture is a file: `public/assets/manifest.json` lists
+the dinos, grounds, sky objects and board marks, and `src/ui/assets.ts` is the
+only code that turns a key into a path. A missing file leaves a gap; it never
+breaks the screen.
 
-The rocket, black hole, star and mute icons are inline SVG from
-`src/ui/icons.ts`. They draw with `currentColor` and take their size from the
-cell, so they stay sharp at any tile size and nothing waits on a font.
+Each square paints its leg's ground picture — `grounds/mars.svg` across squares
+41 to 50 — and keeps its number in that leg's ink. The links are one SVG layer
+above the squares and below the dinos: `linkPath` curves between two square
+centres, `ribbonPath` tapers it from pad to pad, and the link the last move used
+carries `data-live="true"` and draws at full strength while the rest sit back.
 
-The dinosaurs live in an overlay layer above the grid and move with `transform`,
-which is what lets the current player's dino stay full size while other players
-on the same square shrink to dots.
+The dinosaurs ride a white disc ringed in their species colour, in an overlay
+layer above the grid, and move with `transform`. That is what lets the current
+player stay full size while other players on the same square shrink to dots. The
+mute icon is still inline SVG from `src/ui/icons.ts`.
 
 ```bash
 npm test      # rules, state and animation paths — no browser needed
