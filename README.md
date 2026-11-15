@@ -20,7 +20,8 @@ The dice always shows a face, starting at 1, and tumbles while it rolls. When
 someone wins, the banner leads with their dino and name, and puts the cursor on
 "another game" so the next round is one key away.
 
-Two to six players take turns on one device.
+Two to six players take turns on one device. The six dinos are Rex, Stego,
+Trike, Long, Ptero and Anky, one per player in that order.
 
 ## Build
 
@@ -50,6 +51,17 @@ Unchanged from the original terminal version:
 - You must land on the Star exactly. Overshooting bounces you back by the
   remainder, and that bounce never triggers a rocket or black hole.
 - Square 1 is bottom-left, square 100 closes the top row.
+
+The board itself is not fixed: every game draws nine rockets and nine holes at
+random, never on the start or the Star.
+
+## Change the art
+
+Every picture in the game — the six dinos, the ten grounds, the sky and the
+board marks — is a file under `public/assets/`. Replace one with a file of the
+same name, reload the page, and the board uses it: no code change, no rebuild.
+`public/assets/README.md` lists each file with its size and the room a
+replacement should keep.
 
 ## How it works
 
