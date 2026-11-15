@@ -17,8 +17,6 @@ export interface Player {
   position: number;
 }
 
-const newSeed = (): number => Math.random() * 2 ** 32;
-
 export class Game {
   players: Player[];
   board: Board;
@@ -26,7 +24,7 @@ export class Game {
   winner: number | null = null;
   log: string[] = [];
 
-  constructor(count: number, seed = newSeed()) {
+  constructor(count: number, seed = Math.random() * 2 ** 32) {
     if (!Number.isInteger(count) || count < MIN_PLAYERS || count > MAX_PLAYERS) {
       throw new RangeError(
         `players must be between ${MIN_PLAYERS} and ${MAX_PLAYERS}, got ${count}`,
@@ -63,13 +61,6 @@ export class Game {
     }
 
     return result;
-  }
-
-  reset(): void {
-    this.board = makeBoard(newSeed());
-    for (const p of this.players) p.position = 0;
-    this.winner = null;
-    this.log = [];
   }
 
   private pushLog(line: string): void {

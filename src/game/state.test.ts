@@ -43,24 +43,6 @@ describe('Game', () => {
     expect(g.turn).toBe(turnBefore);
   });
 
-  test('reset clears positions and winner but keeps players', () => {
-    const g = new Game(2, 1);
-    g.players[0].position = 50;
-    g.winner = 0;
-    g.reset();
-    expect(g.players.every((p) => p.position === 0)).toBe(true);
-    expect(g.winner).toBeNull();
-    expect(g.players).toHaveLength(2);
-  });
-
-  test('reset lays out a fresh board', () => {
-    const g = new Game(2, 1);
-    const before = g.board;
-    g.reset();
-    expect(g.board).not.toBe(before);
-    expect(g.board.rockets).toHaveLength(9);
-  });
-
   test('a different seed lays out a different board', () => {
     expect(new Game(2, 1).board.rockets).not.toEqual(new Game(2, 2).board.rockets);
   });

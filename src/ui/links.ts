@@ -5,7 +5,6 @@
 export interface LinkGeometry {
   d: string;
   end: { x: number; y: number };
-  angle: number;
 }
 
 interface Point {
@@ -45,11 +44,7 @@ export function linkPath(from: number, to: number, cell: number, gap: number): L
   };
   const tip = { x: round(end.x), y: round(end.y) };
 
-  return {
-    d: `M${round(start.x)} ${round(start.y)} Q${control.x} ${control.y} ${tip.x} ${tip.y}`,
-    end: tip,
-    angle: (Math.atan2(tip.y - control.y, tip.x - control.x) * 180) / Math.PI,
-  };
+  return { d: `M${round(start.x)} ${round(start.y)} Q${control.x} ${control.y} ${tip.x} ${tip.y}`, end: tip };
 }
 
 function curve(geometry: LinkGeometry): { a: Point; c: Point; b: Point } {

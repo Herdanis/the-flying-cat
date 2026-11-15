@@ -45,14 +45,6 @@ test('squareCentre walks the serpentine from the bottom left', () => {
   expect(squareCentre(100, CELL, GAP)).toEqual({ x: CELL / 2, y: CELL / 2 });
 });
 
-test('the arrow angle points from the control point to the end', () => {
-  const { d, end, angle } = linkPath(12, 78, CELL, GAP);
-  const n = numbers(d);
-  const control = { x: n[2], y: n[3] };
-  const want = (Math.atan2(end.y - control.y, end.x - control.x) * 180) / Math.PI;
-  expect(angle).toBeCloseTo(want, 6);
-});
-
 test('a ribbon is a closed outline that tapers from start to end width', () => {
   const ribbon = ribbonPath(linkPath(3, 27, CELL, GAP), 6, 16);
   expect(ribbon.endsWith('Z')).toBe(true);
@@ -81,7 +73,6 @@ test('every trap pair on a seeded board makes a finite path across the board', (
 
     expect(geometry.d).not.toContain('NaN');
     expect(ribbon).not.toContain('NaN');
-    expect(Number.isFinite(geometry.angle)).toBe(true);
 
     const run = Math.hypot(geometry.end.x - start.x, geometry.end.y - start.y);
     expect(run).toBeGreaterThan(0);

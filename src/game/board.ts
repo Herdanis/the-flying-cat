@@ -18,9 +18,3 @@ export const LEGS: readonly string[] = [
   'Deep Space',
   'Star',
 ];
-
-export function legName(square: number): string {
-  const perLeg = Math.ceil(LAST_SQUARE / LEGS.length);
-  const clamped = Math.min(Math.max(square, 1), LAST_SQUARE);
-  return LEGS[Math.min(Math.floor((clamped - 1) / perLeg), LEGS.length - 1)];
-}
