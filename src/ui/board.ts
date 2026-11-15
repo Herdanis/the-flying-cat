@@ -200,9 +200,7 @@ export function createBoard(): BoardView {
       `translate(${x + size * SEAT.chip.x}px, ${y + size * SEAT.chip.y}px) translate(-100%, 0)`;
   }
 
-  function render(game: Game): void {
-    ensureTokens(game.players.length);
-
+  function planTokens(game: Game): Map<number, SquarePlan> {
     const groups = new Map<number, number[]>();
     game.players.forEach((player, i) => {
       const square = displaySquare(player.position);
@@ -211,37 +209,33 @@ export function createBoard(): BoardView {
       groups.set(square, list);
     });
 
-    const current = game.turn;
     const plans = new Map<number, SquarePlan>();
     for (const [square, group] of groups) {
-      plans.set(square, squarePlan(group, current, cellBox(square).size));
-    }
-
-    for (const square of badgesToDrop(badges.keys(), plans.keys())) {
-      badges.get(square)?.remove();
-      badges.delete(square);
+      plans.set(square, squarePlan(group, game.turn, cellBox(square).size));
     }
 
     game.players.forEach((player, i) => {
       const square = displaySquare(player.position);
       const group = groups.get(square) ?? [];
-      const plan = plans.get(square) ?? squarePlan([], current, 0);
+      const plan = plans.get(square) ?? squarePlan([], game.turn, 0);
       const token = tokens[i];
-      const isCurrent = i === current;
-      const dot = !isCurrent && group.length > 1;
-      const slot = group.filter((n) => n !== current).indexOf(i);
+      const dot = i !== game.turn && group.length > 1;
+      const slot = group.filter((n) => n !== game.turn).indexOf(i);
 
       token.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
-      token.classList.toggle('current', isCurrent);
+      token.classList.toggle('current', i === game.turn);
       token.classList.toggle('dot', dot);
       token.classList.toggle('gone', dot && slot >= plan.dots);
       if (dot) token.dataset.slot = String(slot);
-
-      place(i, square, true);
     });
 
-    for (const [square, cell] of cells) {
-      cell.classList.toggle('crowded', (plans.get(square)?.chip ?? 0) > 0);
+    return plans;
+  }
+
+  function paintChips(plans: Map<number, SquarePlan>): void {
+    for (const square of badgesToDrop(badges.keys(), plans.keys())) {
+      badges.get(square)?.remove();
+      badges.delete(square);
     }
 
     for (const [square, plan] of plans) {
@@ -261,10 +255,12 @@ export function createBoard(): BoardView {
     }
   }
 
-  function reflow(game: Game): void {
+  /** Full repaint: also the resize path, since a tile can cross the dot threshold. */
+  function paint(game: Game): void {
+    ensureTokens(game.players.length);
+    paintChips(planTokens(game));
     game.players.forEach((player, i) => place(i, displaySquare(player.position), true));
-    for (const [square, badge] of badges) seatChip(badge, square);
   }
 
-  return { el: board, render, tokenRect, place, reflow };
+  return { el: board, render: paint, tokenRect, place, reflow: paint };
 }

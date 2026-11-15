@@ -343,11 +343,6 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-/* The crowd chip shares the top edge, so a three-digit number narrows. */
-.cell.crowded .cell-num {
-  font-size: max(6px, calc(var(--cell) * 0.2));
-}
-
 .cell-mark {
   position: relative;
   display: block;
@@ -425,7 +420,7 @@ button {
 .token.current {
   box-shadow:
     0 0 0 2px #05091c,
-    0 0 0 4px var(--c);
+    0 0 0 4px var(--ink);
 }
 
 .face {

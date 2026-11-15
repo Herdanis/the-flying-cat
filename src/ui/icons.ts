@@ -6,12 +6,15 @@ function svg(inner: string): string {
   return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
 }
 
+// Filled silhouette: at a 13px tile the stroked version's outlines merge into a blob.
 export function rocket(): string {
-  return svg(
-    '<path d="M12 2 8 8h8z"/>' +
-      '<path d="M9 8v6h6V8"/>' +
-      '<path d="M9 10.5 6.5 14v3.5L9 15"/>' +
-      '<path d="M15 10.5 17.5 14v3.5L15 15"/>',
+  return (
+    '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" stroke="none">' +
+    '<path d="M12 1.8 15.8 8.2v7.2H8.2V8.2z"/>' +
+    '<path d="M8.2 10.8 4.4 16.4v3.2l3.8-3.6z"/>' +
+    '<path d="M15.8 10.8 19.6 16.4v3.2l-3.8-3.6z"/>' +
+    '<path d="M10 16.4 12 21.8l2-5.4z"/>' +
+    '</svg>'
   );
 }
 

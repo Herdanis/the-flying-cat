@@ -45,9 +45,10 @@ Unchanged from the original terminal version:
 ## How it works
 
 `src/game/` holds the rules — pure TypeScript, no DOM, no browser API, and no
-imports from anywhere else. It is tested on its own. The grid maths lives there
-too: ten legs of ten squares with the direction alternating each leg, so the
-same functions place a square and say which way the track leaves it.
+imports from anywhere else. It is tested on its own. Where a square sits on the
+grid, and which way the track leaves it, is drawing code instead: `cellGridPos`
+and `dirToNext` live in `src/ui/board.ts`, next to the column and row they
+assign.
 
 `src/ui/` draws. The board is fat rounded tiles on a star-chart backdrop, with a
 dashed track joining consecutive squares and the leg names running down the
