@@ -15,7 +15,7 @@ export function showStart(onPick: (count: number) => void): HTMLElement {
     const btn = el('button', 'start-btn');
     btn.type = 'button';
     btn.setAttribute('aria-label', `${count} players`);
-    btn.textContent = DINO.repeat(count);
+    btn.append(el('span', 'start-count', String(count)), el('span', 'start-dinos', DINO.repeat(count)));
     btn.addEventListener('click', () => onPick(count));
     row.append(btn);
   }
