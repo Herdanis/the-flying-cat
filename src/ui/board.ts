@@ -23,18 +23,21 @@ const LIGHT_HALO = '#101a3a';
 const BRIGHT_LEGS = new Set([4, 5, 6, 9]);
 // The mock's tile size; every mark is measured against it.
 const MOCK_CELL = 54;
+// Room the token's ring takes outside its disc.
+const RING = 2;
 
 // Token seats as a fraction of the cell; the number owns the top-left.
-interface Seat {
+export interface Seat {
   x: number;
   y: number;
   size: number;
+  step?: number;
 }
 
-const SEAT = {
+export const SEAT = {
   current: { x: 0.4, y: 0.7, size: 0.62 } satisfies Seat,
   other: { x: 0.42, y: 0.66, size: 0.52 } satisfies Seat,
-  dot: { x: 0.82, y: 0.52, size: 0.34, step: 0.3 } satisfies Seat & { step: number },
+  dot: { x: 0.82, y: 0.52, size: 0.34, step: 0.3 } satisfies Seat,
   chip: { x: 0.97, y: 0.03 },
 };
 
@@ -64,6 +67,25 @@ export function squarePlan(group: number[], current: number, tilePx: number): Sq
 export function badgesToDrop(have: Iterable<number>, want: Iterable<number>): number[] {
   const keep = new Set(want);
   return [...have].filter((square) => !keep.has(square));
+}
+
+export interface SeatBox {
+  x: number;
+  y: number;
+  size: number;
+}
+
+/** Where a token sits: its seat, kept on the tile with room for the ring. */
+export function seatCentre(box: SeatBox, seat: Seat, slot = 0): { x: number; y: number } {
+  const half = (box.size * seat.size) / 2 + RING;
+  const low = half;
+  const high = box.size - half;
+  const keep = (value: number): number =>
+    high < low ? box.size / 2 : Math.min(Math.max(value, low), high);
+  return {
+    x: box.x + keep(box.size * seat.x),
+    y: box.y + keep(box.size * (seat.y + (seat.step ?? 0) * slot)),
+  };
 }
 
 export function displaySquare(position: number): number {
@@ -128,6 +150,9 @@ export function createBoard(traps: Board): BoardView {
     const num = el('span', 'cell-num', String(square));
     num.setAttribute('aria-hidden', 'true');
     cell.append(num);
+
+    const dir = dirToNext(square);
+    if (dir) cell.dataset.dir = dir;
 
     if (square === LAST_SQUARE) {
       const star = document.createElement('img');
@@ -202,7 +227,7 @@ export function createBoard(traps: Board): BoardView {
       mark('launchPad', { x: start.x, y: padY }, cell * 0.34 * k),
       mark('rocketShip', { x: start.x, y: start.y + cell * 0.16 * k }, cell * 0.3 * k),
       mark('landingPad', { x: geometry.end.x, y: dropY }, cell * 0.34 * k),
-      mark('rocketShip', { x: geometry.end.x, y: geometry.end.y + cell * 0.16 * k }, cell * 0.28 * k),
+      mark('rocketLanded', { x: geometry.end.x, y: geometry.end.y + cell * 0.13 * k }, cell * 0.26 * k),
       mark('dust', { x: geometry.end.x, y: geometry.end.y + cell * 0.3 * k }, cell * 0.24 * k),
     );
     return group;
@@ -281,20 +306,15 @@ export function createBoard(traps: Board): BoardView {
     if (!piece) return;
 
     const box = cellBox(square);
-    const frame = overlay.getBoundingClientRect();
     const slot = Number(piece.dataset.slot ?? '0');
     const seat = piece.classList.contains('dot')
-      ? { ...SEAT.dot, y: SEAT.dot.y + slot * SEAT.dot.step }
+      ? SEAT.dot
       : piece.classList.contains('current')
         ? SEAT.current
         : SEAT.other;
+    const { x: cx, y: cy } = seatCentre(box, seat, slot);
 
-    const size = box.size * seat.size;
-    const half = size / 2;
-    const cx = Math.min(Math.max(box.x + box.size * seat.x, half), frame.width - half);
-    const cy = Math.min(Math.max(box.y + box.size * seat.y, half), frame.height - half);
-
-    piece.style.setProperty('--tk', `${size}px`);
+    piece.style.setProperty('--tk', `${box.size * seat.size}px`);
     if (instant) piece.classList.add('no-anim');
     piece.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
     if (instant) {

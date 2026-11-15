@@ -36,11 +36,17 @@ describe('makeBoard', () => {
     }
   });
 
-  test('rockets climb at least six and holes drop at least six', () => {
+  test('rockets climb and holes drop between six and twenty', () => {
     for (const seed of SEEDS) {
       const board = makeBoard(seed);
-      for (const [from, to] of board.rockets) expect(to).toBeGreaterThan(from + 5);
-      for (const [from, to] of board.holes) expect(to).toBeLessThan(from - 5);
+      for (const [from, to] of board.rockets) {
+        expect(to).toBeGreaterThan(from + 5);
+        expect(to).toBeLessThanOrEqual(from + 20);
+      }
+      for (const [from, to] of board.holes) {
+        expect(to).toBeLessThan(from - 5);
+        expect(to).toBeGreaterThanOrEqual(from - 20);
+      }
     }
   });
 

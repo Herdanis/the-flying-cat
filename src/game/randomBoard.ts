@@ -13,7 +13,7 @@ export interface Board {
 const FIRST = 2;
 const LAST = LAST_SQUARE - 1;
 const MIN_HOP = 6;
-const MAX_HOP = 24;
+const MAX_HOP = 20;
 const ATTEMPTS = 80;
 
 function lcg(seed: number): () => number {

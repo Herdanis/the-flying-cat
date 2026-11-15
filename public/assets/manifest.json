@@ -30,6 +30,7 @@
   },
   "marks": {
     "rocketShip": "assets/marks/rocketShip.svg",
+    "rocketLanded": "assets/marks/rocketLanded.svg",
     "launchPad": "assets/marks/launchPad.svg",
     "landingPad": "assets/marks/landingPad.svg",
     "dust": "assets/marks/dust.svg",

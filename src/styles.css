@@ -391,6 +391,34 @@ button {
   background-repeat: no-repeat;
 }
 
+.cell[data-dir]::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  border: 0 dashed #3a4670;
+}
+
+.cell[data-dir='right']::after {
+  top: 50%;
+  left: 85%;
+  width: 30%;
+  border-top-width: 2px;
+}
+
+.cell[data-dir='left']::after {
+  top: 50%;
+  right: 85%;
+  width: 30%;
+  border-top-width: 2px;
+}
+
+.cell[data-dir='up']::after {
+  bottom: 85%;
+  left: 50%;
+  height: 30%;
+  border-left-width: 2px;
+}
+
 .cell-num {
   position: absolute;
   /* 12% of the cell clears the tile's 5% padding and its rounded corner. */

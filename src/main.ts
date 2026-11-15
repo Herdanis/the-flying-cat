@@ -154,7 +154,9 @@ function startGame(count: number): void {
     animating = true;
     play('roll');
     const mover = game.turn;
-    const from = displaySquare(game.players[mover].position);
+    // The trap square is real-board maths; 0 reads as square 1 only when drawing.
+    const at = game.players[mover].position;
+    const from = displaySquare(at);
 
     await dice.tumble();
     const face = 1 + Math.floor(Math.random() * 6);
@@ -173,7 +175,7 @@ function startGame(count: number): void {
     if (result.kind === 'dragged') play('hole');
 
     const used = result.kind === 'boosted' || result.kind === 'dragged';
-    board.markLink(used ? { from: from + face, to: result.at } : null);
+    board.markLink(used ? { from: at + face, to: result.at } : null);
     paint();
     if (game.winner !== null) {
       play('win');
