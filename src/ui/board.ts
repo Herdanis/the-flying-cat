@@ -20,10 +20,11 @@ interface Seat {
   size: number;
 }
 
+// The chip owns the top-right corner, so the dots stack below it and clear the dino.
 const SEAT = {
-  current: { x: 0.55, y: 0.68, size: 0.62 } satisfies Seat,
+  current: { x: 0.4, y: 0.66, size: 0.6 } satisfies Seat,
   other: { x: 0.5, y: 0.63, size: 0.52 } satisfies Seat,
-  dot: { x: 0.63, y: 0.2, size: 0.15, step: 0.19 } satisfies Seat & { step: number },
+  dot: { x: 0.81, y: 0.44, size: 0.15, step: 0.2 } satisfies Seat & { step: number },
   chip: { x: 0.97, y: 0.03 },
 };
 
@@ -174,7 +175,7 @@ export function createBoard(): BoardView {
     const board = overlay.getBoundingClientRect();
     const slot = Number(token.dataset.slot ?? '0');
     const seat = token.classList.contains('dot')
-      ? { ...SEAT.dot, x: SEAT.dot.x + slot * SEAT.dot.step }
+      ? { ...SEAT.dot, y: SEAT.dot.y + slot * SEAT.dot.step }
       : token.classList.contains('current')
         ? SEAT.current
         : SEAT.other;
