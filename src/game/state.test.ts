@@ -22,6 +22,12 @@ describe('Game', () => {
     expect(g.players.map((p) => p.name)).toEqual(SPECIES.map((s) => s.name));
   });
 
+  test('everyone starts on square 1 and a roll of 1 moves them on', () => {
+    const g = new Game(3, 1);
+    expect(g.players.map((p) => p.position)).toEqual([1, 1, 1]);
+    expect(g.roll(() => 1).at).toBeGreaterThan(1);
+  });
+
   test('turns advance in order and wrap', () => {
     const g = new Game(3, 1);
     g.roll(() => 1);

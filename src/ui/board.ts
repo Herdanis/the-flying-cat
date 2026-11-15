@@ -144,16 +144,14 @@ export function tokenPlan(count: number, tilePx: number): TokenPlan {
   return { dots, chip: count - dots };
 }
 
-export interface SquarePlan extends TokenPlan {
-  gone: number;
-}
+export type SquarePlan = TokenPlan;
 
-/** What one square draws: crowd dots, hidden players, chip count. */
+/** What one square draws: crowd dots and the chip count. */
 export function squarePlan(group: number[], current: number, tilePx: number): SquarePlan {
   // A lone player keeps a full-size token, so only a shared tile has crowd.
   const others = group.length > 1 ? group.filter((i) => i !== current).length : 0;
   const { dots, chip } = tokenPlan(others, tilePx);
-  return { dots, gone: others - dots, chip };
+  return { dots, chip };
 }
 
 /** Badged squares the current plan no longer wants. */
@@ -179,10 +177,6 @@ export function seatCentre(box: SeatBox, seat: Seat, slot = 0): { x: number; y: 
     x: box.x + keep(box.size * seat.x),
     y: box.y + keep(box.size * (seat.y + (seat.step ?? 0) * slot)),
   };
-}
-
-export function displaySquare(position: number): number {
-  return position === 0 ? 1 : position;
 }
 
 export function cellGridPos(square: number): { column: number; row: number } {
@@ -410,7 +404,7 @@ export function createBoard(traps: Board): BoardView {
   function planPieces(game: Game): Map<number, SquarePlan> {
     const groups = new Map<number, number[]>();
     game.players.forEach((player, i) => {
-      const square = displaySquare(player.position);
+      const square = player.position;
       const list = groups.get(square) ?? [];
       list.push(i);
       groups.set(square, list);
@@ -422,7 +416,7 @@ export function createBoard(traps: Board): BoardView {
     }
 
     game.players.forEach((player, i) => {
-      const square = displaySquare(player.position);
+      const square = player.position;
       const group = groups.get(square) ?? [];
       const plan = plans.get(square) ?? squarePlan([], game.turn, 0);
       const piece = pieces[i];
@@ -467,7 +461,7 @@ export function createBoard(traps: Board): BoardView {
     ensurePieces(game.players.length);
     if (links.childElementCount === 0) drawLinks();
     paintChips(planPieces(game));
-    game.players.forEach((player, i) => place(i, displaySquare(player.position), true));
+    game.players.forEach((player, i) => place(i, player.position, true));
   }
 
   function reflow(game: Game): void {

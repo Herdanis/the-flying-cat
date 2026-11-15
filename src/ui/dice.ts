@@ -37,16 +37,20 @@ export function createDice(onRoll: () => void): DiceView {
   button.append(grid);
   button.addEventListener('click', onRoll);
 
-  function showFace(value: number): void {
+  function pips(value: number): void {
     const on = PIPS[value] ?? [];
     cells.forEach((pip, i) => pip.classList.toggle('on', on.includes(i)));
+  }
+
+  function showFace(value: number): void {
+    pips(value);
     button.setAttribute('aria-label', value > 0 ? `Roll, showing ${value}` : 'Roll');
   }
 
   async function tumble(): Promise<void> {
     if (prefersReducedMotion()) return;
     button.classList.add('tumbling');
-    const spin = setInterval(() => showFace(1 + Math.floor(Math.random() * 6)), FRAME_MS);
+    const spin = setInterval(() => pips(1 + Math.floor(Math.random() * 6)), FRAME_MS);
     await new Promise((resolve) => setTimeout(resolve, TUMBLE_MS));
     clearInterval(spin);
     button.classList.remove('tumbling');

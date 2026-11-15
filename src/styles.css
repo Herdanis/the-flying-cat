@@ -858,6 +858,11 @@ button {
   color: var(--ink-faint);
 }
 
+.panel-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 /* ============================================
    Portrait Stack
    ============================================ */
@@ -869,6 +874,10 @@ button {
   }
 
   .mute {
+    grid-area: mute;
+  }
+
+  .panel-buttons {
     grid-area: mute;
   }
 

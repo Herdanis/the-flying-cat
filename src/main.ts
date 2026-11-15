@@ -8,9 +8,9 @@ import type { MoveResult } from './game/rules';
 import { SPECIES } from './game/species';
 import { Game } from './game/state';
 import { asset } from './ui/assets';
-import { displaySquare, createBoard, type BoardView } from './ui/board';
+import { createBoard, type BoardView } from './ui/board';
 import { createDice } from './ui/dice';
-import { speaker } from './ui/icons';
+import { restart, speaker } from './ui/icons';
 import { el, faceImg, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
 import { animateMove, movePath } from './ui/motion';
 import { isMuted, play, setMuted } from './ui/sound';
@@ -28,10 +28,16 @@ const SKY: [string, string][] = [
 const reduced = prefersReducedMotion();
 
 let live: { board: BoardView; game: Game } | null = null;
+let frame = 0;
 
+/** One reflow per frame: a drag of the window fires far more resizes than that. */
 function remeasure(): void {
-  if (!live || !live.board.el.isConnected) return;
-  live.board.reflow(live.game);
+  if (frame) return;
+  frame = requestAnimationFrame(() => {
+    frame = 0;
+    if (!live || !live.board.el.isConnected) return;
+    live.board.reflow(live.game);
+  });
 }
 
 // ============================================
@@ -100,6 +106,16 @@ function createMute(): HTMLButtonElement {
   return button;
 }
 
+function createRestart(onClick: () => void): HTMLButtonElement {
+  const button = el('button', 'mute');
+  button.type = 'button';
+  button.innerHTML = restart();
+  button.setAttribute('aria-label', 'New game');
+  button.title = 'New game';
+  button.addEventListener('click', onClick);
+  return button;
+}
+
 function pathFor(from: number, result: MoveResult): number[] {
   if (result.kind === 'bounced') {
     return movePath(from, LAST_SQUARE).concat(movePath(LAST_SQUARE, result.at).slice(1));
@@ -121,8 +137,11 @@ function startGame(count: number): void {
   turn.append(turnDino, turnName);
 
   const log = el('p', 'log');
+  log.setAttribute('aria-live', 'polite');
+  const buttons = el('div', 'panel-buttons');
+  buttons.append(createMute(), createRestart(startPicker));
   const side = el('div', 'side');
-  side.append(turn, dice.el, createMute(), log);
+  side.append(turn, dice.el, buttons, log);
 
   const screen = el('div', 'screen game-screen');
   screen.append(board.el, side);
@@ -151,16 +170,16 @@ function startGame(count: number): void {
     animating = true;
     play('roll');
     const mover = game.turn;
-    // The trap square is real-board maths; 0 reads as square 1 only when drawing.
+    // A tap during the tumble counts as a tap on the walk.
+    skip = false;
     const at = game.players[mover].position;
-    const from = displaySquare(at);
+    const from = at;
 
     await dice.tumble();
     const face = 1 + Math.floor(Math.random() * 6);
     dice.showFace(face);
 
     const result = game.roll(() => face);
-    skip = false;
     await animateMove(board, mover, pathFor(from, result), {
       reduced,
       arc: result.kind === 'boosted' || result.kind === 'dragged',

@@ -15,3 +15,7 @@ export function speaker(muted: boolean): string {
       slash,
   );
 }
+
+export function restart(): string {
+  return svg('<path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3v5h-5"/>');
+}

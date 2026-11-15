@@ -34,7 +34,7 @@ export class Game {
     this.players = Array.from({ length: count }, (_, i) => ({
       name: SPECIES[i].name,
       colorIndex: i,
-      position: 0,
+      position: 1,
     }));
   }
 
