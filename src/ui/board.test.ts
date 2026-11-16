@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import {
-  dirToNext,
+  bayOrder,
+  baySeat,
   badgesToDrop,
   MARK,
   markSize,
@@ -42,17 +43,6 @@ test('the current player sits low in the tile', () => {
   expect(y).toBeLessThan(72);
 });
 
-test('the track turns the way the snakes-and-ladders route does', () => {
-  expect(dirToNext(1)).toBe('right');
-  expect(dirToNext(9)).toBe('right');
-  expect(dirToNext(10)).toBe('up');
-  expect(dirToNext(11)).toBe('left');
-  expect(dirToNext(12)).toBe('left');
-  expect(dirToNext(20)).toBe('up');
-  expect(dirToNext(21)).toBe('right');
-  expect(dirToNext(100)).toBeNull();
-});
-
 test('crowd layout depends on how big a tile is', () => {
   expect(tokenPlan(0, 72)).toEqual({ dots: 0, chip: 0 });
   expect(tokenPlan(1, 72)).toEqual({ dots: 1, chip: 0 });
@@ -79,6 +69,32 @@ test('the dot threshold sits between 43 and 44px', () => {
 test('the current player is never counted as crowd', () => {
   expect(squarePlan([0, 1], 0, 72)).toEqual({ dots: 1, chip: 0 });
   expect(squarePlan([0, 1, 2, 3], 0, 30)).toEqual({ dots: 0, chip: 3 });
+});
+
+test('waiting players keep player order', () => {
+  expect(bayOrder([0, 4, 0, 0, 7, 0])).toEqual([0, 2, 3, 5]);
+  expect(bayOrder([1, 2])).toEqual([]);
+});
+
+test('a bay seat spreads the waiting dinos evenly around the middle', () => {
+  const box = { x: 100, y: 20, width: 600, height: 40 };
+
+  expect(baySeat(0, 1, box).x).toBeCloseTo(box.x + box.width / 2, 6);
+
+  const three = [0, 1, 2].map((i) => baySeat(i, 3, box).x);
+  expect(three[1]).toBeCloseTo(box.x + box.width / 2, 6);
+  expect(three[0]! < three[1]!).toBe(true);
+  expect(three[1]! < three[2]!).toBe(true);
+  expect(three[0]! + three[2]!).toBeCloseTo(2 * three[1]!, 6);
+
+  for (const count of [2, 6]) {
+    for (let i = 0; i < count; i++) {
+      const { x, y } = baySeat(i, count, box);
+      expect(x).toBeGreaterThan(box.x);
+      expect(x).toBeLessThan(box.x + box.width);
+      expect(y).toBeCloseTo(box.y + box.height / 2, 6);
+    }
+  }
 });
 
 test('a badge on a square the plan dropped is pruned', () => {

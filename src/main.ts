@@ -12,7 +12,7 @@ import { createBoard, type BoardView } from './ui/board';
 import { createDice } from './ui/dice';
 import { restart, speaker } from './ui/icons';
 import { el, faceImg, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
-import { animateMove, movePath } from './ui/motion';
+import { animateMove, movePath, type MovePlan } from './ui/motion';
 import { isMuted, play, setMuted } from './ui/sound';
 import { showStart } from './ui/start';
 
@@ -116,11 +116,17 @@ function createRestart(onClick: () => void): HTMLButtonElement {
   return button;
 }
 
-function pathFor(from: number, result: MoveResult): number[] {
+function planFor(from: number, face: number, result: MoveResult): MovePlan {
   if (result.kind === 'bounced') {
-    return movePath(from, LAST_SQUARE).concat(movePath(LAST_SQUARE, result.at).slice(1));
+    return {
+      walk: movePath(from, LAST_SQUARE).concat(movePath(LAST_SQUARE, result.at).slice(1)),
+      trap: null,
+    };
   }
-  return movePath(from, result.at);
+  if (result.kind === 'boosted' || result.kind === 'dragged') {
+    return { walk: movePath(from, from + face), trap: { from: from + face, to: result.at } };
+  }
+  return { walk: movePath(from, result.at), trap: null };
 }
 
 function startGame(count: number): void {
@@ -148,9 +154,6 @@ function startGame(count: number): void {
   mount(screen);
   live = { board, game };
 
-  let animating = false;
-  let skip = false;
-
   function paint(): void {
     board.render(game);
     const player = game.current();
@@ -162,36 +165,30 @@ function startGame(count: number): void {
 
   async function roll(): Promise<void> {
     if (game.winner !== null) return;
-    if (animating) {
-      skip = true;
-      return;
-    }
 
-    animating = true;
+    // A die that is out of action cannot be pressed twice.
+    dice.el.disabled = true;
     play('roll');
     const mover = game.turn;
-    // A tap during the tumble counts as a tap on the walk.
-    skip = false;
-    const at = game.players[mover].position;
-    const from = at;
-
-    await dice.tumble();
+    const from = game.players[mover].position;
     const face = 1 + Math.floor(Math.random() * 6);
-    dice.showFace(face);
 
-    const result = game.roll(() => face);
-    await animateMove(board, mover, pathFor(from, result), {
-      reduced,
-      arc: result.kind === 'boosted' || result.kind === 'dragged',
-      skipped: () => skip,
-    });
+    try {
+      await dice.tumble(face);
+      const result = game.roll(() => face);
+      const plan = planFor(from, face, result);
 
-    animating = false;
-    if (result.kind === 'boosted') play('rocket');
-    if (result.kind === 'dragged') play('hole');
+      // The others re-centre in the bay while this one flies out of it.
+      board.reseat(game);
+      board.markLink(plan.trap);
+      await animateMove(board, mover, plan, reduced);
 
-    const used = result.kind === 'boosted' || result.kind === 'dragged';
-    board.markLink(used ? { from: at + face, to: result.at } : null);
+      if (result.kind === 'boosted') play('rocket');
+      if (result.kind === 'dragged') play('hole');
+    } finally {
+      dice.el.disabled = false;
+    }
+
     paint();
     if (game.winner !== null) {
       play('win');

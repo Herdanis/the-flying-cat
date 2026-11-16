@@ -22,6 +22,8 @@
   --gap: clamp(8px, 2vw, 22px);
   --tile-gap: clamp(4px, 1.1vmin, 10px);
   --panel-w: 220px;
+  /* the launch bay under the board: its own strip plus the gap above it */
+  --bay-h: clamp(34px, 7vmin, 52px);
   /* portrait panel: turn row, two 8px gaps, dice, one log line */
   --panel-h: calc(
     max(48px, 1.8 * clamp(22px, 5vmin, 34px) + 8px) + clamp(96px, 18vmin, 120px) +
@@ -32,20 +34,26 @@
     (100vw - var(--gutter) - var(--panel-w) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10) /
       10
   );
-  --fit-h: 8vh;
-  --fit-h: 8dvh;
+  --fit-h: calc(8vh - (var(--bay-h) + var(--tile-gap)) / 10);
+  --fit-h: calc(8dvh - (var(--bay-h) + var(--tile-gap)) / 10);
   --cell: min(var(--fit-w), var(--fit-h));
-  --hop: 120ms;
+  --hop: 300ms;
 }
 
 @media (orientation: portrait) {
   :root {
     --fit-w: calc((100vw - var(--gutter) - var(--screen-pad) * 2 - var(--tile-gap) * 10) / 10);
     --fit-h: calc(
-      (100vh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10) / 10
+      (
+          100vh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10 -
+            var(--bay-h) - var(--tile-gap)
+        ) / 10
     );
     --fit-h: calc(
-      (100dvh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10) / 10
+      (
+          100dvh - var(--panel-h) - var(--gap) - var(--screen-pad) * 2 - var(--tile-gap) * 10 -
+            var(--bay-h) - var(--tile-gap)
+        ) / 10
     );
   }
 }
@@ -424,6 +432,21 @@ button {
    Board
    ============================================ */
 
+.board-wrap {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+}
+
+.bay {
+  height: var(--bay-h);
+  margin: var(--tile-gap) 0 0 var(--gutter);
+  border-radius: calc(var(--bay-h) * 0.34);
+  background: rgba(20, 28, 61, 0.72);
+  box-shadow: inset 0 0 0 1px var(--card-line);
+}
+
 .board {
   display: grid;
   grid-template-columns: var(--gutter) repeat(10, var(--cell));
@@ -461,34 +484,6 @@ button {
   object-fit: cover;
   /* Same rounding as the tile; `inherit` collapses to 0 in moli's engine. */
   border-radius: calc(var(--cell) * 0.16);
-}
-
-.cell[data-dir]::after {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  border: 0 dashed #3a4670;
-}
-
-.cell[data-dir='right']::after {
-  top: 50%;
-  left: 85%;
-  width: 30%;
-  border-top-width: 2px;
-}
-
-.cell[data-dir='left']::after {
-  top: 50%;
-  right: 85%;
-  width: 30%;
-  border-top-width: 2px;
-}
-
-.cell[data-dir='up']::after {
-  bottom: 85%;
-  left: 50%;
-  height: 30%;
-  border-left-width: 2px;
 }
 
 .cell-num {
@@ -574,7 +569,7 @@ button {
   position: absolute;
   top: 0;
   left: 0;
-  opacity: 0.58;
+  opacity: 0.92;
 }
 
 .trap-mark[data-live='true'] {
@@ -586,9 +581,8 @@ button {
    ============================================ */
 
 .overlay {
-  grid-column: 2 / -1;
-  grid-row: 1 / -1;
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 3;
   pointer-events: none;
 }
@@ -619,6 +613,11 @@ button {
   width: 86%;
   height: 86%;
   object-fit: contain;
+  transform: scale(var(--fly, 1));
+}
+
+.token.flying {
+  transition: none;
 }
 
 .token.dot {
@@ -651,36 +650,78 @@ button {
    ============================================ */
 
 .dice {
+  --die: clamp(76px, 14.4vmin, 96px);
   width: clamp(96px, 18vmin, 120px);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  border-radius: 22%;
-  background: linear-gradient(160deg, #ffffff, #d8dff2);
-  box-shadow:
-    0 6px 0 #8794bb,
-    0 10px 20px rgba(0, 0, 0, 0.45);
-  transition: transform 90ms ease, box-shadow 90ms ease;
+  perspective: 640px;
+  background: none;
+  transition: transform 90ms ease;
 }
 
 .dice:active {
   transform: translateY(4px);
-  box-shadow:
-    0 2px 0 #8794bb,
-    0 4px 10px rgba(0, 0, 0, 0.45);
 }
 
 .dice:disabled {
   opacity: 0.55;
+  cursor: default;
 }
 
-.pips {
+.dice-bounce {
+  width: var(--die);
+  height: var(--die);
+  display: grid;
+  place-items: center;
+}
+
+.dice-cube {
+  position: relative;
+  width: var(--die);
+  height: var(--die);
+  transform-style: preserve-3d;
+  transition: transform 1000ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dice-face {
+  position: absolute;
+  inset: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
   gap: 8%;
-  width: 66%;
-  aspect-ratio: 1;
+  padding: 12%;
+  border-radius: 14%;
+  background: linear-gradient(160deg, #ffffff, #d8dff2);
+  box-shadow:
+    inset 0 0 0 1px #c3cce6,
+    inset 0 -6px 12px rgba(135, 148, 187, 0.35);
+  backface-visibility: hidden;
+}
+
+.dice-face[data-face='1'] {
+  transform: translateZ(calc(var(--die) / 2));
+}
+
+.dice-face[data-face='6'] {
+  transform: rotateY(180deg) translateZ(calc(var(--die) / 2));
+}
+
+.dice-face[data-face='3'] {
+  transform: rotateY(90deg) translateZ(calc(var(--die) / 2));
+}
+
+.dice-face[data-face='4'] {
+  transform: rotateY(-90deg) translateZ(calc(var(--die) / 2));
+}
+
+.dice-face[data-face='2'] {
+  transform: rotateX(90deg) translateZ(calc(var(--die) / 2));
+}
+
+.dice-face[data-face='5'] {
+  transform: rotateX(-90deg) translateZ(calc(var(--die) / 2));
 }
 
 .pip {
@@ -691,22 +732,6 @@ button {
 
 .pip.on {
   opacity: 1;
-}
-
-.dice.tumbling .pips {
-  animation: tumble 110ms linear infinite;
-}
-
-@keyframes tumble {
-  0% {
-    transform: rotate(0deg) scale(1);
-  }
-  50% {
-    transform: rotate(9deg) scale(0.9);
-  }
-  100% {
-    transform: rotate(-9deg) scale(1);
-  }
 }
 
 /* ============================================
@@ -896,8 +921,8 @@ button {
 
 .reduced .token,
 .reduced .dice,
+.reduced .dice-cube,
 .reduced .banner,
-.reduced .dice.tumbling .pips,
 .reduced .confetti {
   transition: none !important;
   animation: none !important;

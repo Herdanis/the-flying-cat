@@ -16,12 +16,21 @@ Open the address it prints. The start screen has one button per player count,
 2 to 6, each showing its number and that many dinos. Tap one, then tap the big
 dice. That is the whole interface — no reading required.
 
-The dice always shows a face, starting at 1, and tumbles while it rolls. When
-someone wins, the banner leads with their dino and name, and puts the cursor on
-"another game" so the next round is one key away.
+The dice always shows a face, starting at 1, and tumbles while it rolls. Every
+dino waits in the launch bay under the board and flies out on its first roll.
+When someone wins, the banner leads with their dino and name, and puts the cursor
+on "another game" so the next round is one key away.
 
 Two to six players take turns on one device. The six dinos are Rex, Stego,
 Trike, Long, Ptero and Anky, one per player in that order.
+
+## Board rules
+
+- The first ten squares hold no trap at either end, so every dino gets a clean start.
+- No trap starts in the last ten squares, so the Star is only reached by rolling.
+- Each leg of ten, 11–20 up to 81–90, holds two or three traps with a rocket and a hole. Two legs get three: one with two rockets, one with two holes.
+- Rockets lift at least as far in total as the holes drag back.
+- No two traps share a start or a landing, no two starts touch, and every hop is 6 to 20 squares.
 
 ## Build
 

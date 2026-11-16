@@ -58,12 +58,18 @@ function curve(geometry: LinkGeometry): { a: Point; c: Point; b: Point } {
   return { a: { x: ax, y: ay }, c: { x: cx, y: cy }, b: { x: bx, y: by } };
 }
 
-function pointOn(a: Point, c: Point, b: Point, t: number): Point {
+function bezier(a: Point, c: Point, b: Point, t: number): Point {
   const u = 1 - t;
   return {
     x: u * u * a.x + 2 * u * t * c.x + t * t * b.x,
     y: u * u * a.y + 2 * u * t * c.y + t * t * b.y,
   };
+}
+
+/** A point on the link's own curve, t from 0 (start) to 1 (end). */
+export function pointOn(geometry: LinkGeometry, t: number): Point {
+  const { a, c, b } = curve(geometry);
+  return bezier(a, c, b, t);
 }
 
 export function ribbonPath(geometry: LinkGeometry, startWidth: number, endWidth: number): string {
@@ -73,10 +79,10 @@ export function ribbonPath(geometry: LinkGeometry, startWidth: number, endWidth:
 
   for (let i = 0; i <= STEPS; i++) {
     const t = i / STEPS;
-    const p = pointOn(a, c, b, t);
+    const p = bezier(a, c, b, t);
     // Difference across the sample; at t=1 step back so the tangent stays real.
-    const behind = t < 1 ? p : pointOn(a, c, b, t - 0.01);
-    const ahead = t < 1 ? pointOn(a, c, b, t + 0.01) : p;
+    const behind = t < 1 ? p : bezier(a, c, b, t - 0.01);
+    const ahead = t < 1 ? bezier(a, c, b, t + 0.01) : p;
     const dx = ahead.x - behind.x;
     const dy = ahead.y - behind.y;
     const length = Math.hypot(dx, dy) || 1;

@@ -8,9 +8,7 @@ import { SPECIES } from '../game/species';
 import type { Game } from '../game/state';
 import { asset, groundFor } from './assets';
 import { el, faceImg, playerColors } from './layout';
-import { linkPath, ribbonPath, type LinkGeometry } from './links';
-
-export type TrackDir = 'right' | 'left' | 'up';
+import { linkPath, pointOn, ribbonPath, type LinkGeometry } from './links';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DOT_MIN_TILE = 44;
@@ -160,6 +158,28 @@ export function badgesToDrop(have: Iterable<number>, want: Iterable<number>): nu
   return [...have].filter((square) => !keep.has(square));
 }
 
+export interface BayBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// A waiting dino takes this share of the bay's height.
+const BAY_TOKEN = 0.7;
+
+/** Player indexes still waiting off the board, in player order. */
+export function bayOrder(positions: readonly number[]): number[] {
+  return positions.flatMap((position, i) => (position === 0 ? [i] : []));
+}
+
+/** Centre of a waiting dino's spot: spread evenly, centred, in player order. */
+export function baySeat(index: number, count: number, box: BayBox): { x: number; y: number } {
+  const pitch = Math.min(box.width / Math.max(count, 1), box.height * 1.6);
+  const left = box.x + (box.width - pitch * count) / 2;
+  return { x: left + pitch * (index + 0.5), y: box.y + box.height / 2 };
+}
+
 export interface SeatBox {
   x: number;
   y: number;
@@ -186,13 +206,6 @@ export function cellGridPos(square: number): { column: number; row: number } {
   return { column: column + 1, row: 10 - leg };
 }
 
-export function dirToNext(square: number): TrackDir | null {
-  if (square < 1 || square >= LAST_SQUARE) return null;
-  const leg = Math.floor((square - 1) / 10);
-  if ((square - 1) % 10 === 9) return 'up';
-  return leg % 2 === 0 ? 'right' : 'left';
-}
-
 /** Number colour for a leg: dark on the bright grounds, light on the rest. */
 export function numberInk(leg: number): string {
   return BRIGHT_LEGS.has(leg) ? DARK_INK : LIGHT_INK;
@@ -207,6 +220,10 @@ export interface BoardView {
   el: HTMLElement;
   render(game: Game): void;
   place(playerIndex: number, square: number, instant?: boolean): void;
+  reseat(game: Game): void;
+  placeAt(playerIndex: number, x: number, y: number, scale?: number): void;
+  lift(playerIndex: number, on?: boolean): void;
+  curveFor(from: number, to: number): (t: number) => { x: number; y: number };
   reflow(game: Game): void;
   markLink(link: LinkPair | null): void;
 }
@@ -216,6 +233,7 @@ function svg<K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap
 }
 
 export function createBoard(traps: Board): BoardView {
+  const wrap = el('div', 'board-wrap');
   const board = el('div', 'board');
   board.setAttribute('role', 'img');
   board.setAttribute('aria-label', `Board of ${LAST_SQUARE} squares from Earth to Star`);
@@ -246,9 +264,6 @@ export function createBoard(traps: Board): BoardView {
     num.setAttribute('aria-hidden', 'true');
     cell.append(num);
 
-    const dir = dirToNext(square);
-    if (dir) cell.dataset.dir = dir;
-
     if (square === LAST_SQUARE) {
       const star = document.createElement('img');
       star.className = 'cell-mark';
@@ -278,12 +293,18 @@ export function createBoard(traps: Board): BoardView {
   board.append(marks);
 
   const overlay = el('div', 'overlay');
-  board.append(overlay);
+  const bay = el('div', 'bay');
+  bay.setAttribute('aria-hidden', 'true');
+  wrap.append(board, bay, overlay);
 
   const pieces: HTMLElement[] = [];
   const badges = new Map<number, HTMLElement>();
+  const baySeats = new Map<number, { index: number; count: number }>();
   const colors = playerColors();
   let live: LinkPair | null = null;
+  let cellPx = 0;
+  let gapPx = 0;
+  let linkShift = { x: 0, y: 0 };
 
   // ============================================
   // Links
@@ -314,7 +335,7 @@ export function createBoard(traps: Board): BoardView {
     const path = svg('path');
     path.setAttribute('d', d);
     path.setAttribute('fill', fill);
-    path.setAttribute('opacity', faint ? '0.3' : '0.9');
+    path.setAttribute('opacity', faint ? '0.45' : '0.95');
     return path;
   }
 
@@ -332,6 +353,11 @@ export function createBoard(traps: Board): BoardView {
     // The marks are html, so their origin is the board's, not the svg's.
     const base = board.getBoundingClientRect();
     const origin = { x: box.left - base.left, y: box.top - base.top };
+
+    cellPx = cell;
+    gapPx = gap;
+    const o = overlay.getBoundingClientRect();
+    linkShift = { x: box.left - o.left, y: box.top - o.top };
 
     for (const pair of trapPairs(traps, cell, live, gap)) {
       const group = svg('g');
@@ -373,26 +399,74 @@ export function createBoard(traps: Board): BoardView {
     return { x: c.left - o.left, y: c.top - o.top, size: c.width };
   }
 
+  function bayBox(): BayBox {
+    const b = bay.getBoundingClientRect();
+    const o = overlay.getBoundingClientRect();
+    return { x: b.left - o.left, y: b.top - o.top, width: b.width, height: b.height };
+  }
+
+  /** Record every waiting player's bay slot; the mover keeps its old one to fly from. */
+  function seatBay(game: Game): number[] {
+    const waiting = bayOrder(game.players.map((player) => player.position));
+    waiting.forEach((i, index) => baySeats.set(i, { index, count: waiting.length }));
+    return waiting;
+  }
+
   function place(playerIndex: number, square: number, instant = false): void {
     const piece = pieces[playerIndex];
     if (!piece) return;
 
-    const box = cellBox(square);
     const slot = Number(piece.dataset.slot ?? '0');
     const seat = piece.classList.contains('dot')
       ? SEAT.dot
       : piece.classList.contains('current')
         ? SEAT.current
         : SEAT.other;
-    const { x: cx, y: cy } = seatCentre(box, seat, slot);
+    const parked = baySeats.get(playerIndex) ?? { index: 0, count: 1 };
 
-    piece.style.setProperty('--tk', `${box.size * seat.size}px`);
+    let at: { x: number; y: number };
+    let size: number;
+    if (square === 0) {
+      const box = bayBox();
+      at = baySeat(parked.index, parked.count, box);
+      size = box.height * BAY_TOKEN;
+    } else {
+      const box = cellBox(square);
+      at = seatCentre(box, seat, slot);
+      size = box.size * seat.size;
+    }
+
+    piece.style.setProperty('--tk', `${size}px`);
     if (instant) piece.classList.add('no-anim');
-    piece.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+    piece.style.transform = `translate(${at.x}px, ${at.y}px) translate(-50%, -50%)`;
     if (instant) {
       void piece.offsetWidth;
       piece.classList.remove('no-anim');
     }
+  }
+
+  function reseat(game: Game): void {
+    for (const i of seatBay(game)) place(i, 0);
+  }
+
+  function placeAt(playerIndex: number, x: number, y: number, scale = 1): void {
+    const piece = pieces[playerIndex];
+    if (!piece) return;
+    piece.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    piece.style.setProperty('--fly', String(scale));
+  }
+
+  function lift(playerIndex: number, on = true): void {
+    pieces[playerIndex]?.classList.toggle('flying', on);
+  }
+
+  /** A sampler along the trap's own drawn curve: t 0→1, in the overlay's pixels. */
+  function curveFor(from: number, to: number): (t: number) => { x: number; y: number } {
+    const geometry = linkPath(from, to, cellPx, gapPx);
+    return (t) => {
+      const point = pointOn(geometry, t);
+      return { x: point.x + linkShift.x, y: point.y + linkShift.y };
+    };
   }
 
   function seatChip(badge: HTMLElement, square: number): void {
@@ -402,8 +476,10 @@ export function createBoard(traps: Board): BoardView {
   }
 
   function planPieces(game: Game): Map<number, SquarePlan> {
+    seatBay(game);
     const groups = new Map<number, number[]>();
     game.players.forEach((player, i) => {
+      if (player.position === 0) return;
       const square = player.position;
       const list = groups.get(square) ?? [];
       list.push(i);
@@ -416,15 +492,20 @@ export function createBoard(traps: Board): BoardView {
     }
 
     game.players.forEach((player, i) => {
+      const piece = pieces[i];
+      piece.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
+      piece.classList.toggle('current', i === game.turn);
+      if (player.position === 0) {
+        piece.classList.remove('dot', 'gone');
+        return;
+      }
+
       const square = player.position;
       const group = groups.get(square) ?? [];
       const plan = plans.get(square) ?? squarePlan([], game.turn, 0);
-      const piece = pieces[i];
       const dot = i !== game.turn && group.length > 1;
       const slot = group.filter((n) => n !== game.turn).indexOf(i);
 
-      piece.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
-      piece.classList.toggle('current', i === game.turn);
       piece.classList.toggle('dot', dot);
       piece.classList.toggle('gone', dot && slot >= plan.dots);
       if (dot) piece.dataset.slot = String(slot);
@@ -469,5 +550,15 @@ export function createBoard(traps: Board): BoardView {
     paint(game);
   }
 
-  return { el: board, render: paint, place, reflow, markLink };
+  return {
+    el: wrap,
+    render: paint,
+    place,
+    reseat,
+    placeAt,
+    lift,
+    curveFor,
+    reflow,
+    markLink,
+  };
 }

@@ -2,16 +2,16 @@
 // Motion
 // ============================================
 
-import type { BoardView } from './board';
+import type { BoardView, LinkPair } from './board';
 
-const HOP_MS = 120;
-const ARC_MS = 420;
-const SKIP_POLL_MS = 40;
+const HOP_MS = 300;
+const FLY_MS = 1500;
+// How far a flying dino swells at the top of its arc.
+const LIFT = 0.14;
 
-export interface MoveOptions {
-  reduced: boolean;
-  arc?: boolean;
-  skipped?: () => boolean;
+export interface MovePlan {
+  walk: number[];
+  trap: LinkPair | null;
 }
 
 export function movePath(from: number, to: number): number[] {
@@ -25,47 +25,53 @@ export function movePath(from: number, to: number): number[] {
 export async function animateMove(
   board: BoardView,
   player: number,
-  path: number[],
-  options: MoveOptions,
+  plan: MovePlan,
+  reduced: boolean,
 ): Promise<void> {
-  const dest = path[path.length - 1];
+  const last = plan.walk.length - 1;
+  const dest = plan.trap ? plan.trap.to : plan.walk[last];
 
-  if (options.reduced || path.length === 1) {
+  if (reduced) {
     board.place(player, dest, true);
     return;
   }
 
-  if (options.arc) {
-    board.el.style.setProperty('--hop', `${ARC_MS}ms`);
-    try {
-      board.place(player, dest);
-      await wait(ARC_MS, options.skipped);
-    } finally {
-      board.el.style.removeProperty('--hop');
-    }
-    return;
+  for (const square of plan.walk) {
+    board.place(player, square);
+    if (square === plan.walk[last]) break;
+    await wait(HOP_MS);
   }
 
-  for (const square of path) {
-    board.place(player, square);
-    if (square === dest) break;
-    await wait(HOP_MS, options.skipped);
-    if (options.skipped?.()) {
-      board.place(player, dest, true);
-      break;
-    }
+  if (!plan.trap) return;
+  await fly(board, player, board.curveFor(plan.trap.from, plan.trap.to), FLY_MS);
+  // Settle into the seat, so the last few pixels glide instead of snapping.
+  board.place(player, dest);
+}
+
+async function fly(
+  board: BoardView,
+  player: number,
+  curve: (t: number) => { x: number; y: number },
+  ms: number,
+): Promise<void> {
+  board.lift(player);
+  try {
+    await new Promise<void>((resolve) => {
+      const start = performance.now();
+      const step = (): void => {
+        const t = Math.min((performance.now() - start) / ms, 1);
+        const { x, y } = curve(t);
+        board.placeAt(player, x, y, 1 + Math.sin(t * Math.PI) * LIFT);
+        if (t < 1) requestAnimationFrame(step);
+        else resolve();
+      };
+      requestAnimationFrame(step);
+    });
+  } finally {
+    board.lift(player, false);
   }
 }
 
-function wait(ms: number, skipped?: () => boolean): Promise<void> {
-  return new Promise((resolve) => {
-    let left = ms;
-    const tick = (): void => {
-      if (skipped?.()) return resolve();
-      left -= SKIP_POLL_MS;
-      if (left <= 0) return resolve();
-      setTimeout(tick, SKIP_POLL_MS);
-    };
-    setTimeout(tick, SKIP_POLL_MS);
-  });
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

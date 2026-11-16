@@ -14,6 +14,7 @@ const LOG_LINES = 4;
 export interface Player {
   name: string;
   colorIndex: number;
+  /** Board square, 1-based; 0 means still waiting in the launch bay. */
   position: number;
 }
 
@@ -34,7 +35,7 @@ export class Game {
     this.players = Array.from({ length: count }, (_, i) => ({
       name: SPECIES[i].name,
       colorIndex: i,
-      position: 1,
+      position: 0,
     }));
   }
 

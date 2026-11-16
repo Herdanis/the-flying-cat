@@ -22,10 +22,15 @@ describe('Game', () => {
     expect(g.players.map((p) => p.name)).toEqual(SPECIES.map((s) => s.name));
   });
 
-  test('everyone starts on square 1 and a roll of 1 moves them on', () => {
+  test('everyone waits in the bay and a first roll moves them onto the board', () => {
     const g = new Game(3, 1);
-    expect(g.players.map((p) => p.position)).toEqual([1, 1, 1]);
-    expect(g.roll(() => 1).at).toBeGreaterThan(1);
+    expect(g.players.map((p) => p.position)).toEqual([0, 0, 0]);
+    expect(g.roll(() => 1).at).toBe(1);
+  });
+
+  test('a first roll of 6 lands on square 6, which the board keeps clear', () => {
+    const g = new Game(2, 2);
+    expect(g.roll(() => 6).at).toBe(6);
   });
 
   test('turns advance in order and wrap', () => {
