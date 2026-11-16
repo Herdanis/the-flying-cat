@@ -2,9 +2,11 @@
 // Motion
 // ============================================
 
+import { LAST_SQUARE } from '../game/board';
+import type { MoveResult } from '../game/rules';
 import type { BoardView, LinkPair } from './board';
 
-const HOP_MS = 300;
+export const HOP_MS = 300;
 const FLY_MS = 1500;
 // How far a flying dino swells at the top of its arc.
 const LIFT = 0.14;
@@ -20,6 +22,19 @@ export function movePath(from: number, to: number): number[] {
   for (let square = from; square !== to; square += step) path.push(square);
   path.push(to);
   return path;
+}
+
+export function planFor(from: number, face: number, result: MoveResult): MovePlan {
+  if (result.kind === 'bounced') {
+    return {
+      walk: movePath(from, LAST_SQUARE).concat(movePath(LAST_SQUARE, result.at).slice(1)),
+      trap: null,
+    };
+  }
+  if (result.kind === 'boosted' || result.kind === 'dragged') {
+    return { walk: movePath(from, from + face), trap: { from: from + face, to: result.at } };
+  }
+  return { walk: movePath(from, result.at), trap: null };
 }
 
 export async function animateMove(

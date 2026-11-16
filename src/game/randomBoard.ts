@@ -8,7 +8,7 @@
 // - Two rockets never touch, two holes never touch; a rocket may neighbour a hole.
 // - Nine rockets and nine holes; every leg except Earth and Star holds two or three, both kinds.
 
-import { LAST_SQUARE, type Trap } from './board';
+import { LAST_SQUARE, LEGS as LEG_NAMES, type Trap } from './board';
 
 export interface Board {
   rockets: Trap[];
@@ -28,18 +28,19 @@ interface Leg {
   hi: number;
 }
 
+// Square ranges per leg; the names come from the board's own list, so they exist once.
 const LEGS: Leg[] = [
-  { name: 'Earth', lo: 1, hi: 10 },
-  { name: 'Orbit', lo: 11, hi: 20 },
-  { name: 'Moon', lo: 21, hi: 30 },
-  { name: 'Asteroid Belt', lo: 31, hi: 40 },
-  { name: 'Mars', lo: 41, hi: 50 },
-  { name: 'Jupiter', lo: 51, hi: 60 },
-  { name: 'Saturn', lo: 61, hi: 70 },
-  { name: 'Neptune', lo: 71, hi: 80 },
-  { name: 'Deep Space', lo: 81, hi: 90 },
-  { name: 'Star', lo: 91, hi: LAST_SQUARE },
-];
+  [1, 10],
+  [11, 20],
+  [21, 30],
+  [31, 40],
+  [41, 50],
+  [51, 60],
+  [61, 70],
+  [71, 80],
+  [81, 90],
+  [91, LAST_SQUARE],
+].map(([lo, hi], i) => ({ name: LEG_NAMES[i], lo, hi }));
 
 const BELT = 3;
 const NEPTUNE = 7;

@@ -4,13 +4,14 @@
 
 import { el, prefersReducedMotion } from './layout';
 
-const TUMBLE_MS = 1000;
+export const TUMBLE_MS = 1000;
 // Every roll turns at least this far before it lands, so it reads as a tumble.
 const SPIN_X = 540;
 const SPIN_Y = 720;
 const FACES = [1, 2, 3, 4, 5, 6];
 
 // Cube rotation that turns each face to the front.
+// Its other half is the `.dice-face[data-face=…]` placement in styles.css: change both.
 const FACE_ROT: Record<number, readonly [number, number]> = {
   1: [0, 0],
   2: [-90, 0],

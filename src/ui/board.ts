@@ -7,7 +7,7 @@ import type { Board } from '../game/randomBoard';
 import { SPECIES } from '../game/species';
 import type { Game } from '../game/state';
 import { asset, groundFor } from './assets';
-import { el, faceImg, playerColors } from './layout';
+import { el, faceImg } from './layout';
 import { linkPath, pointOn, ribbonPath, type LinkGeometry } from './links';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -300,7 +300,7 @@ export function createBoard(traps: Board): BoardView {
   const pieces: HTMLElement[] = [];
   const badges = new Map<number, HTMLElement>();
   const baySeats = new Map<number, { index: number; count: number }>();
-  const colors = playerColors();
+  const colors = SPECIES.map((species) => species.colour);
   let live: LinkPair | null = null;
   let cellPx = 0;
   let gapPx = 0;

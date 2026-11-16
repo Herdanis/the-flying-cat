@@ -42,8 +42,3 @@ export function faceImg(key: string): HTMLImageElement {
   img.dataset.dino = key;
   return img;
 }
-
-export function playerColors(): string[] {
-  const style = getComputedStyle(document.documentElement);
-  return [1, 2, 3, 4, 5, 6].map((n) => style.getPropertyValue(`--p${n}`).trim());
-}

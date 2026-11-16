@@ -4,12 +4,12 @@
 
 import { SPECIES } from '../game/species';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../game/state';
-import { el, faceImg, playerColors } from './layout';
+import { el, faceImg } from './layout';
 
 export function showStart(onPick: (count: number) => void): HTMLElement {
   const screen = el('div', 'screen start-screen');
   const row = el('div', 'start-row');
-  const colors = playerColors();
+  const colors = SPECIES.map((species) => species.colour);
 
   for (let count = MIN_PLAYERS; count <= MAX_PLAYERS; count++) {
     const btn = el('button', 'start-btn');

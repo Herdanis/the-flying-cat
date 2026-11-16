@@ -48,7 +48,7 @@ describe('Game', () => {
     const r = g.roll(() => 3);
     expect(r.kind).toBe('won');
     expect(g.winner).toBe(0);
-    expect(g.log.at(-1)).toBe('Rex wins!');
+    expect(g.log).toBe('Rex wins!');
     const turnBefore = g.turn;
     g.roll(() => 1);
     expect(g.turn).toBe(turnBefore);
@@ -63,7 +63,7 @@ describe('Game', () => {
     const [from, to] = g.board.rockets[0];
     g.players[0].position = from - 1;
     g.roll(() => 1);
-    expect(g.log.at(-1)).toBe(`Rex rolled 1 — rocket! Up to ${to}.`);
+    expect(g.log).toBe(`Rex rolled 1 — rocket! Up to ${to}.`);
   });
 
   test('the log names a black hole', () => {
@@ -71,14 +71,14 @@ describe('Game', () => {
     const [from, to] = g.board.holes[0];
     g.players[0].position = from - 1;
     g.roll(() => 1);
-    expect(g.log.at(-1)).toBe(`Rex rolled 1 — black hole. Down to ${to}.`);
+    expect(g.log).toBe(`Rex rolled 1 — black hole. Down to ${to}.`);
   });
 
   test('the log names a bounce', () => {
     const g = new Game(2, 1);
     g.players[0].position = 98;
     g.roll(() => 5);
-    expect(g.log.at(-1)).toBe('Rex rolled 5, bounced back to 97.');
+    expect(g.log).toBe('Rex rolled 5, bounced back to 97.');
   });
 
   test('the log names a plain landing', () => {
@@ -86,13 +86,7 @@ describe('Game', () => {
     const square = plainNearStart(g);
     g.players[0].position = square - 1;
     g.roll(() => 1);
-    expect(g.log.at(-1)).toBe(`Rex rolled 1. Now on ${square}.`);
-  });
-
-  test('the log stays bounded', () => {
-    const g = new Game(2, 1);
-    for (let i = 0; i < 60; i++) g.roll(() => 1);
-    expect(g.log.length).toBeLessThanOrEqual(4);
+    expect(g.log).toBe(`Rex rolled 1. Now on ${square}.`);
   });
 });
 

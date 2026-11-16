@@ -3,16 +3,14 @@
 // ============================================
 
 import './styles.css';
-import { LAST_SQUARE } from './game/board';
-import type { MoveResult } from './game/rules';
 import { SPECIES } from './game/species';
 import { Game } from './game/state';
 import { asset } from './ui/assets';
 import { createBoard, type BoardView } from './ui/board';
-import { createDice } from './ui/dice';
+import { createDice, TUMBLE_MS } from './ui/dice';
 import { restart, speaker } from './ui/icons';
-import { el, faceImg, mount, onViewportChange, playerColors, prefersReducedMotion } from './ui/layout';
-import { animateMove, movePath, type MovePlan } from './ui/motion';
+import { el, faceImg, mount, onViewportChange, prefersReducedMotion } from './ui/layout';
+import { animateMove, HOP_MS, planFor } from './ui/motion';
 import { isMuted, play, setMuted } from './ui/sound';
 import { showStart } from './ui/start';
 
@@ -87,7 +85,7 @@ function createSky(): void {
 // ============================================
 
 function createMute(): HTMLButtonElement {
-  const button = el('button', 'mute');
+  const button = el('button', 'icon-btn');
   button.type = 'button';
 
   const paint = (): void => {
@@ -107,7 +105,7 @@ function createMute(): HTMLButtonElement {
 }
 
 function createRestart(onClick: () => void): HTMLButtonElement {
-  const button = el('button', 'mute');
+  const button = el('button', 'icon-btn');
   button.type = 'button';
   button.innerHTML = restart();
   button.setAttribute('aria-label', 'New game');
@@ -116,23 +114,10 @@ function createRestart(onClick: () => void): HTMLButtonElement {
   return button;
 }
 
-function planFor(from: number, face: number, result: MoveResult): MovePlan {
-  if (result.kind === 'bounced') {
-    return {
-      walk: movePath(from, LAST_SQUARE).concat(movePath(LAST_SQUARE, result.at).slice(1)),
-      trap: null,
-    };
-  }
-  if (result.kind === 'boosted' || result.kind === 'dragged') {
-    return { walk: movePath(from, from + face), trap: { from: from + face, to: result.at } };
-  }
-  return { walk: movePath(from, result.at), trap: null };
-}
-
 function startGame(count: number): void {
   const game = new Game(count);
   const board = createBoard(game.board);
-  const colors = playerColors();
+  const colors = SPECIES.map((species) => species.colour);
   const dice = createDice(() => void roll());
 
   const turnDino = el('span', 'turn-dino');
@@ -160,7 +145,7 @@ function startGame(count: number): void {
     turnDino.style.setProperty('--c', colors[player.colorIndex] ?? colors[0]);
     turnDino.replaceChildren(faceImg(SPECIES[player.colorIndex % SPECIES.length].key));
     turnName.textContent = `${player.name}'s turn`;
-    log.textContent = game.log.at(-1) ?? '';
+    log.textContent = game.log;
   }
 
   async function roll(): Promise<void> {
@@ -175,16 +160,18 @@ function startGame(count: number): void {
 
     try {
       await dice.tumble(face);
+      if (!live || live.game !== game) return;
+
       const result = game.roll(() => face);
       const plan = planFor(from, face, result);
 
       // The others re-centre in the bay while this one flies out of it.
       board.reseat(game);
       board.markLink(plan.trap);
-      await animateMove(board, mover, plan, reduced);
-
       if (result.kind === 'boosted') play('rocket');
       if (result.kind === 'dragged') play('hole');
+      await animateMove(board, mover, plan, reduced);
+      if (!live || live.game !== game) return;
     } finally {
       dice.el.disabled = false;
     }
@@ -246,15 +233,9 @@ function startPicker(): void {
   mount(showStart((count) => startGame(count)));
 }
 
-/** One palette: the species colour seeds every player variable. */
-function seedColours(): void {
-  SPECIES.forEach((species, i) => {
-    document.documentElement.style.setProperty(`--p${i + 1}`, species.colour);
-  });
-}
-
 function boot(): void {
-  seedColours();
+  document.documentElement.style.setProperty('--hop', `${HOP_MS}ms`);
+  document.documentElement.style.setProperty('--tumble', `${TUMBLE_MS}ms`);
   createSky();
   startPicker();
 

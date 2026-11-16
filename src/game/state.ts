@@ -9,8 +9,6 @@ import { SPECIES } from './species';
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 6;
 
-const LOG_LINES = 4;
-
 export interface Player {
   name: string;
   colorIndex: number;
@@ -23,7 +21,7 @@ export class Game {
   board: Board;
   turn = 0;
   winner: number | null = null;
-  log: string[] = [];
+  log = '';
 
   constructor(count: number, seed = Math.random() * 2 ** 32) {
     if (!Number.isInteger(count) || count < MIN_PLAYERS || count > MAX_PLAYERS) {
@@ -53,7 +51,7 @@ export class Game {
     this.players[this.turn].position = result.at;
 
     const who = this.players[this.turn].name;
-    this.pushLog(describe(who, face, result));
+    this.log = describe(who, face, result);
 
     if (result.kind === 'won') {
       this.winner = this.turn;
@@ -62,11 +60,6 @@ export class Game {
     }
 
     return result;
-  }
-
-  private pushLog(line: string): void {
-    this.log.push(line);
-    if (this.log.length > LOG_LINES) this.log.shift();
   }
 }
 

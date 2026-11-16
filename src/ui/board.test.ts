@@ -3,6 +3,7 @@ import {
   bayOrder,
   baySeat,
   badgesToDrop,
+  cellGridPos,
   MARK,
   markSize,
   numberInk,
@@ -11,10 +12,23 @@ import {
   squarePlan,
   tokenPlan,
 } from './board';
+import { squareCentre } from './links';
 
 test('the number ink flips on the four bright grounds', () => {
   for (const leg of [4, 5, 6, 9]) expect(numberInk(leg)).toBe('#2a1f08');
   for (const leg of [0, 1, 2, 3, 7, 8]) expect(numberInk(leg)).toBe('#e8eeff');
+});
+
+test('the css grid and the link layer put every square in the same place', () => {
+  const CELL = 48;
+  const GAP = 6;
+  for (let n = 1; n <= 100; n++) {
+    const grid = cellGridPos(n);
+    expect(squareCentre(n, CELL, GAP)).toEqual({
+      x: (grid.column - 2) * (CELL + GAP) + CELL / 2,
+      y: (grid.row - 1) * (CELL + GAP) + CELL / 2,
+    });
+  }
 });
 
 test('crowd dots and their ring stay on the tile', () => {
