@@ -63,7 +63,7 @@ function turn(from: Angles, end: Angles, part: number): string {
 export function tumbleFrames(from: Angles, face: number): Keyframe[] {
   const end = endAngles(from, face);
   return [
-    { offset: 0, transform: turn(from, end, 0), easing: 'cubic-bezier(0.65, 0, 0.35, 1)' },
+    { offset: 0, transform: turn(from, end, 0), easing: 'cubic-bezier(0.15, 0.9, 0.25, 1)' },
     { offset: 1, transform: turn(from, end, 1) },
   ];
 }
