@@ -927,13 +927,6 @@ button {
   cursor: default;
 }
 
-.dice-bounce {
-  width: var(--die);
-  height: var(--die);
-  display: grid;
-  place-items: center;
-}
-
 .dice-cube {
   position: relative;
   width: var(--die);

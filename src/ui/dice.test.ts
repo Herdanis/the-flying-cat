@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { PIPS, tumbleFrames } from './dice';
+import { PIPS, TUMBLE_MS, tumbleFrames } from './dice';
 
 const FACES = [1, 2, 3, 4, 5, 6];
 const FACE_ANGLES: Record<number, readonly [number, number]> = {
@@ -53,4 +53,17 @@ test('every frame turns forward, always more than a full turn per axis', () => {
     expect(last.y - first.y).toBeGreaterThan(360);
     from = last;
   }
+});
+
+test('the roll lasts at least 1.5s on one eased curve, and never hops', () => {
+  const frames = tumbleFrames({ x: 0, y: 0 }, 3);
+
+  expect(TUMBLE_MS).toBeGreaterThanOrEqual(1500);
+  expect(frames).toHaveLength(2);
+
+  const ease = String(frames[0].easing);
+  expect(['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out']).not.toContain(ease);
+
+  for (const frame of frames) expect(String(frame.transform)).not.toMatch(/translate/);
+  expect(String(frames[1].transform)).toMatch(/^rotateX\(-?[\d.]+deg\) rotateY\(-?[\d.]+deg\)$/);
 });
