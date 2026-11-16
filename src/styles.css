@@ -303,6 +303,8 @@ button {
 /* Head and shoulders: the head stays put and grows; the disc clips the body. */
 .turn-dino .face,
 .start-face .face,
+.picker-face .face,
+.roll-face .face,
 .token.dot .face {
   transform-origin: var(--hx) var(--hy);
   transform: translate(calc(50% - var(--hx)), calc(50% - var(--hy))) scale(1.8);
@@ -347,6 +349,262 @@ button {
   min-height: var(--tap);
   display: flex;
   align-items: center;
+}
+
+/* ============================================
+   Game Shelf
+   ============================================ */
+
+.home-screen {
+  flex-direction: column;
+  gap: clamp(12px, 3vmin, 28px);
+}
+
+.home-title {
+  margin: 0;
+  font-size: clamp(20px, 5.5vmin, 42px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--star);
+  text-shadow: 0 2px 18px rgba(255, 215, 94, 0.3);
+}
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: clamp(8px, 2vmin, 16px);
+  width: min(92vw, 620px);
+}
+
+.shelf-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: clamp(10px, 2.4vmin, 18px);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 2px var(--card-line), 0 8px 20px rgba(0, 0, 0, 0.35);
+  color: var(--ink);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.shelf-tile:active {
+  transform: scale(0.97);
+  box-shadow: inset 0 0 0 2px var(--star), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.shelf-mark {
+  width: clamp(34px, 7vmin, 54px);
+  height: clamp(34px, 7vmin, 54px);
+}
+
+.shelf-name {
+  font-size: clamp(14px, 3vmin, 20px);
+  font-weight: 700;
+}
+
+.shelf-blurb {
+  color: var(--ink-dim);
+  font-size: clamp(11px, 2.2vmin, 14px);
+  text-align: center;
+}
+
+.shelf-empty {
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--ink-faint);
+  font-size: clamp(11px, 2.2vmin, 14px);
+}
+
+/* ============================================
+   Dino Picker
+   ============================================ */
+
+.picker-screen {
+  flex-direction: column;
+  gap: clamp(8px, 2.4vmin, 20px);
+}
+
+.picker-title {
+  margin: 0;
+  font-size: clamp(15px, 3.6vmin, 26px);
+  color: var(--ink);
+}
+
+.picker-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 8px;
+  color: var(--ink-dim);
+  font-size: clamp(11px, 2.2vmin, 14px);
+}
+
+.picker-seat {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 2px var(--card-line);
+}
+
+.picker-seat.picker-now {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--star);
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(6px, 1.6vmin, 12px);
+  width: min(92vw, 520px);
+}
+
+@media (min-width: 720px) {
+  .picker-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: min(86vw, 760px);
+  }
+}
+
+.picker-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(6px, 1.6vmin, 12px) 4px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 2px var(--card-line);
+  color: var(--ink);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.picker-tile:active {
+  transform: scale(0.96);
+  box-shadow: inset 0 0 0 2px var(--star);
+}
+
+.picker-face {
+  display: block;
+  width: clamp(38px, 8vmin, 60px);
+  height: clamp(38px, 8vmin, 60px);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--c);
+  overflow: hidden;
+}
+
+.picker-face .face {
+  width: 100%;
+  height: 100%;
+}
+
+.picker-name {
+  font-size: clamp(12px, 2.4vmin, 15px);
+}
+
+.picker-state {
+  min-height: 1em;
+  color: var(--ink-faint);
+  font-size: clamp(10px, 2vmin, 12px);
+}
+
+.picker-tile.picker-taken {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ============================================
+   Roll-Off
+   ============================================ */
+
+.rolloff-screen {
+  flex-direction: column;
+  gap: clamp(8px, 2.2vmin, 18px);
+}
+
+.rolloff-title {
+  margin: 0;
+  font-size: clamp(15px, 3.6vmin, 26px);
+  color: var(--ink);
+}
+
+.roll-caption {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--star);
+  font-size: clamp(11px, 2.4vmin, 15px);
+  text-align: center;
+}
+
+.rolloff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: clamp(6px, 1.6vmin, 12px);
+  width: min(92vw, 620px);
+}
+
+.roll-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: clamp(6px, 1.4vmin, 12px) 4px;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 2px var(--card-line);
+  transition: box-shadow 120ms ease;
+}
+
+.roll-tile.live {
+  box-shadow: inset 0 0 0 3px var(--star);
+}
+
+.roll-face {
+  display: block;
+  width: clamp(30px, 6.4vmin, 46px);
+  height: clamp(30px, 6.4vmin, 46px);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--c);
+  overflow: hidden;
+}
+
+.roll-face .face {
+  width: 100%;
+  height: 100%;
+}
+
+.roll-name {
+  color: var(--ink-dim);
+  font-size: clamp(10px, 2vmin, 13px);
+}
+
+.roll-value {
+  min-height: 1.1em;
+  font-size: clamp(18px, 4vmin, 28px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.roll-order {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: clamp(12px, 2.6vmin, 17px);
+  text-align: center;
+}
+
+.roll-start {
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 2px var(--star), 0 6px 16px rgba(0, 0, 0, 0.4);
+  color: var(--ink);
+  font-size: clamp(13px, 2.8vmin, 18px);
 }
 
 /* ============================================

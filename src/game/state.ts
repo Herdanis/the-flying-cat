@@ -12,6 +12,8 @@ export const MAX_PLAYERS = 6;
 export interface Player {
   name: string;
   colorIndex: number;
+  /** Index into SPECIES: the dino this seat picked. */
+  species: number;
   /** Board square, 1-based; 0 means still waiting in the launch bay. */
   position: number;
 }
@@ -22,19 +24,29 @@ export class Game {
   turn = 0;
   winner: number | null = null;
   log = '';
+  /** Seat indexes in turn order, as the roll-off decided. */
+  order: number[];
 
-  constructor(count: number, seed = Math.random() * 2 ** 32) {
+  constructor(count: number, seed = Math.random() * 2 ** 32, picks?: number[], order?: number[]) {
     if (!Number.isInteger(count) || count < MIN_PLAYERS || count > MAX_PLAYERS) {
       throw new RangeError(
         `players must be between ${MIN_PLAYERS} and ${MAX_PLAYERS}, got ${count}`,
       );
     }
+    if (picks && picks.length !== count) {
+      throw new RangeError(`picks must hold ${count} species, got ${picks.length}`);
+    }
+    const seats = Array.from({ length: count }, (_, i) => i);
+    const species = picks ?? seats;
+    this.order = order ?? seats;
     this.board = makeBoard(seed);
-    this.players = Array.from({ length: count }, (_, i) => ({
-      name: SPECIES[i].name,
-      colorIndex: i,
+    this.players = seats.map((i) => ({
+      name: SPECIES[species[i]].name,
+      colorIndex: species[i],
+      species: species[i],
       position: 0,
     }));
+    this.turn = this.order[0];
   }
 
   current(): Player {
@@ -56,7 +68,7 @@ export class Game {
     if (result.kind === 'won') {
       this.winner = this.turn;
     } else {
-      this.turn = (this.turn + 1) % this.players.length;
+      this.turn = this.order[(this.order.indexOf(this.turn) + 1) % this.order.length];
     }
 
     return result;

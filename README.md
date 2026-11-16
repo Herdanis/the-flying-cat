@@ -12,20 +12,26 @@ npm install
 npm run dev
 ```
 
-Open the address it prints. The start screen has one button per player count,
-2 to 6, each showing its number and that many dinos. Tap one, then tap the big
-dice. That is the whole interface — no reading required.
+Open the address it prints. The first screen is a shelf of games; tap **Dino
+Ladder** to open it, and the browser back button brings you back to the shelf.
+The game starts with one button per player count, 2 to 6, each showing its
+number and that many dinos. Tap one, then the players pick their dinos in seat
+order: a taken dino dims and reads "taken", so no two players share one. Then
+the roll-off decides who begins — everyone rolls once, anyone who ties rolls
+again, and the highest roll goes first. Tap **Start** and play.
 
 The dice always shows a face, starting at 1, and tumbles while it rolls. Every
 dino waits in the launch bay under the board and flies out on its first roll.
 When someone wins, the banner leads with their dino and name, and puts the cursor
-on "another game" so the next round is one key away.
+on "another game", which keeps everyone's dino and rolls off for the next order.
 
 Two to six players take turns on one device. The six dinos are Rex, Stego,
-Trike, Long, Ptero and Anky, one per player in that order.
+Trike, Long, Ptero and Anky; each player picks one, and that dino is their token,
+their name and their colour.
 
 ## Board rules
 
+- The turn order comes from the roll-off, not from the seat order: everyone rolls once, a tie group rolls again among itself, and a group that re-rolls keeps the place its first number earned.
 - Earth holds one rocket, starting on 2 to 10, and no black hole. Nothing ever lands back on the first ten squares.
 - The Asteroid Belt and Neptune trade one trap each way: a rocket from 31–40 up to 71–80, and a hole from 71–80 back down to 31–40. Only that pair may jump more than 20 squares, up to 49.
 - The rocket out of the Belt starts above the square the Neptune hole drops you on.
@@ -77,8 +83,15 @@ replacement should keep.
 `src/game/` holds the rules — pure TypeScript, no DOM, no browser API, and no
 imports from anywhere else. It is tested on its own. Where a square sits on the
 grid, and which way the track leaves it, is drawing code instead: `cellGridPos`
-and `dirToNext` live in `src/ui/board.ts`, next to the column and row they
-assign.
+in `src/ui/board.ts` and `squareCentre` in `src/ui/links.ts` encode the same
+serpentine, one for the css grid and one for the link layer. The roll-off is a
+rule too: `src/game/startOrder.ts` takes the dice as a function, so its tests
+replay a scripted throw instead of waiting for luck.
+
+The shelf is a registry, not a cage: `src/games.ts` lists every game with its
+key, title, tile picture and entry function, `src/router.ts` maps the hash to a
+key in that list, and `#/` is home. A second game is one entry plus its own
+module; the router and the home screen never change.
 
 `src/ui/` draws. Every picture is a file: `public/assets/manifest.json` lists
 the dinos, grounds, sky objects and board marks, and `src/ui/assets.ts` is the

@@ -381,14 +381,20 @@ export function createBoard(traps: Board): BoardView {
   // Pieces
   // ============================================
 
-  function ensurePieces(count: number): void {
-    while (pieces.length < count) {
-      const species = SPECIES[pieces.length % SPECIES.length];
+  function ensurePieces(game: Game): void {
+    while (pieces.length < game.players.length) {
       const piece = el('div', 'token');
-      piece.append(faceImg(species.key));
       pieces.push(piece);
       overlay.append(piece);
     }
+
+    // The face is the picked dino; only a changed species touches the token.
+    game.players.forEach((player, i) => {
+      const key = SPECIES[player.species % SPECIES.length].key;
+      const face = pieces[i].firstElementChild;
+      if (face instanceof HTMLImageElement && face.dataset.dino === key) return;
+      pieces[i].replaceChildren(faceImg(key));
+    });
   }
 
   function cellBox(square: number): { x: number; y: number; size: number } {
@@ -539,7 +545,7 @@ export function createBoard(traps: Board): BoardView {
 
   /** Full repaint: also the resize path, since a tile can cross the dot threshold. */
   function paint(game: Game): void {
-    ensurePieces(game.players.length);
+    ensurePieces(game);
     if (links.childElementCount === 0) drawLinks();
     paintChips(planPieces(game));
     game.players.forEach((player, i) => place(i, player.position, true));

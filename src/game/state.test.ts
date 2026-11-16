@@ -58,6 +58,34 @@ describe('Game', () => {
     expect(new Game(2, 1).board.rockets).not.toEqual(new Game(2, 2).board.rockets);
   });
 
+  test('a pick sets the seat name, colour and species', () => {
+    const g = new Game(3, 1, [4, 0, 2]);
+    expect(g.players.map((p) => p.species)).toEqual([4, 0, 2]);
+    expect(g.players.map((p) => p.name)).toEqual(['Ptero', 'Rex', 'Trike']);
+    expect(g.players.map((p) => p.colorIndex)).toEqual([4, 0, 2]);
+  });
+
+  test('the order decides who starts and who comes next', () => {
+    const g = new Game(3, 1, [0, 1, 2], [2, 0, 1]);
+    expect(g.turn).toBe(2);
+    g.roll(() => 1);
+    expect(g.turn).toBe(0);
+    g.roll(() => 1);
+    expect(g.turn).toBe(1);
+    g.roll(() => 1);
+    expect(g.turn).toBe(2);
+  });
+
+  test('without picks or order the game is unchanged', () => {
+    const g = new Game(2, 1);
+    expect(g.turn).toBe(0);
+    expect(g.players.map((p) => p.name)).toEqual(['Rex', 'Stego']);
+  });
+
+  test('a picks list of the wrong length is rejected', () => {
+    expect(() => new Game(3, 1, [0, 1])).toThrow(RangeError);
+  });
+
   test('the log names the roll and what it did', () => {
     const g = new Game(2, 1);
     const [from, to] = g.board.rockets[0];
