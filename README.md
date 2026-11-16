@@ -26,11 +26,11 @@ Trike, Long, Ptero and Anky, one per player in that order.
 
 ## Board rules
 
-- The first ten squares hold no trap at either end, so every dino gets a clean start.
-- No trap starts in the last ten squares, so the Star is only reached by rolling.
-- Each leg of ten, 11–20 up to 81–90, holds two or three traps with a rocket and a hole. Two legs get three: one with two rockets, one with two holes.
-- Rockets lift at least as far in total as the holes drag back.
-- No two traps share a start or a landing, no two starts touch, and every hop is 6 to 20 squares.
+- Earth holds one rocket, starting on 2 to 10, and no black hole. Nothing ever lands back on the first ten squares.
+- The Asteroid Belt and Neptune trade one trap each way: a rocket from 31–40 up to 71–80, and a hole from 71–80 back down to 31–40. Only that pair may jump more than 20 squares, up to 49.
+- The rocket out of the Belt starts above the square the Neptune hole drops you on.
+- Two rockets never sit on neighbouring squares, and neither do two holes. A rocket may neighbour a hole.
+- Nine rockets and nine holes in all: every leg except Earth and the Star holds two or three traps, always both kinds, and rockets lift at least as far as holes drag back.
 
 ## Build
 

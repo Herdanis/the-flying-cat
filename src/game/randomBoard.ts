@@ -1,12 +1,12 @@
 // ============================================
 // Random Board
 // ============================================
-// Notes: every seed obeys the board rules `violations()` spells out.
-// - No trap starts or ends on squares 1-10.
-// - No trap starts on squares 91-100.
-// - Each leg of ten (11-20 … 81-90) holds two or three traps, always both kinds.
-// - Two legs hold three: one with two rockets, another with two holes; the rest one of each.
-// - Rockets lift at least as far in total as the holes drag back.
+// Notes: every seed obeys the themed board rules `violations()` spells out.
+// - Earth (1-10) holds one rocket starting on 2-10; no trap ever lands on 1-10.
+// - The Belt and Neptune trade one trap each way, and only that pair may hop up to 49.
+// - The Belt rocket starts above the square the Neptune hole drops you on.
+// - Two rockets never touch, two holes never touch; a rocket may neighbour a hole.
+// - Nine rockets and nine holes; every leg except Earth and Star holds two or three, both kinds.
 
 import { LAST_SQUARE, type Trap } from './board';
 
@@ -16,17 +16,46 @@ export interface Board {
   resolve(square: number): number | undefined;
 }
 
-const LEGS = 8;
-const FIRST_SOURCE = 11;
-const LAST_SOURCE = 90;
-const FIRST_TARGET = 11;
-const LAST_TARGET = LAST_SQUARE - 1;
+interface Slot {
+  from: number;
+  to: number;
+  up: boolean;
+}
+
+interface Leg {
+  name: string;
+  lo: number;
+  hi: number;
+}
+
+const LEGS: Leg[] = [
+  { name: 'Earth', lo: 1, hi: 10 },
+  { name: 'Orbit', lo: 11, hi: 20 },
+  { name: 'Moon', lo: 21, hi: 30 },
+  { name: 'Asteroid Belt', lo: 31, hi: 40 },
+  { name: 'Mars', lo: 41, hi: 50 },
+  { name: 'Jupiter', lo: 51, hi: 60 },
+  { name: 'Saturn', lo: 61, hi: 70 },
+  { name: 'Neptune', lo: 71, hi: 80 },
+  { name: 'Deep Space', lo: 81, hi: 90 },
+  { name: 'Star', lo: 91, hi: LAST_SQUARE },
+];
+
+const BELT = 3;
+const NEPTUNE = 7;
+// Orbit, Moon, Mars, Jupiter, Saturn, Deep Space: the legs free to hold the extra hole.
+const OPEN_LEGS = [1, 2, 4, 5, 6, 8];
+
 const MIN_HOP = 6;
 const MAX_HOP = 20;
+const PAIR_HOP = 49;
+// Holes stay short so the board always lifts at least as far as it drags back.
+const HOLE_HOP = 12;
+const LAST_TARGET = LAST_SQUARE - 1;
 const PER_KIND = 9;
 // Random picks per trap; a starved leg hands the attempt back to the caller.
 const CANDIDATES = 60;
-// Salted attempts before the tight one, which caps every hole hop.
+// Salted attempts before the tight one, which takes every hop to its extreme.
 const TRIES = 20;
 const SALT = 0x9e3779b1;
 
@@ -42,16 +71,8 @@ function between(rand: () => number, lo: number, hi: number): number {
   return lo + Math.floor(rand() * (hi - lo + 1));
 }
 
-/** The ten squares of one leg: 0 is 11-20, 7 is 81-90. */
-function legRange(leg: number): [number, number] {
-  const lo = FIRST_SOURCE + leg * 10;
-  return [lo, lo + 9];
-}
-
-interface Slot {
-  from: number;
-  to: number;
-  up: boolean;
+function inLeg(square: number, leg: number): boolean {
+  return square >= LEGS[leg].lo && square <= LEGS[leg].hi;
 }
 
 function trapsOf(board: Board): Slot[] {
@@ -69,37 +90,65 @@ function trapsOf(board: Board): Slot[] {
 export function violations(board: Board): string[] {
   const out: string[] = [];
   const traps = trapsOf(board);
-  const starts = new Set(traps.map((trap) => trap.from));
-  const ends = new Set(traps.map((trap) => trap.to));
+  const sources = new Set(traps.map((trap) => trap.from));
+  const lands = new Set(traps.map((trap) => trap.to));
 
+  // Earth launches once and nothing comes back to the start.
+  const earth = traps.filter((trap) => trap.from <= LEGS[0].hi);
+  const earthRockets = earth.filter((trap) => trap.up);
+  const earthHoles = earth.filter((trap) => !trap.up);
+  if (earthRockets.length !== 1) out.push(`earth: ${earthRockets.length} rockets`);
+  if (earthHoles.length) out.push(`earth: ${earthHoles.length} holes`);
+  if (earthRockets[0]?.from === 1) out.push('earth: starts on 1');
   for (const trap of traps) {
-    const hop = Math.abs(trap.to - trap.from);
-    if (trap.from < FIRST_SOURCE || trap.to < FIRST_TARGET) {
-      out.push(`start zone: ${trap.from} -> ${trap.to}`);
-    }
-    if (trap.from > LAST_SOURCE) out.push(`home stretch: ${trap.from}`);
-    if (hop < MIN_HOP || hop > MAX_HOP) out.push(`hop out of range: ${trap.from} -> ${trap.to}`);
-    if (trap.up !== (trap.to > trap.from)) out.push(`wrong way: ${trap.from} -> ${trap.to}`);
-    if (starts.has(trap.to)) out.push(`lands on a source: ${trap.to}`);
+    if (trap.to < LEGS[1].lo) out.push(`start: lands on ${trap.to}`);
   }
 
-  for (let leg = 0; leg < LEGS; leg++) {
-    const [lo, hi] = legRange(leg);
-    const here = traps.filter((trap) => trap.from >= lo && trap.from <= hi);
-    const name = `leg ${lo}-${hi}`;
+  // One rocket Belt -> Neptune, one hole Neptune -> Belt, the only long hops.
+  const outbound = traps.filter((t) => t.up && inLeg(t.from, BELT) && inLeg(t.to, NEPTUNE));
+  const homeward = traps.filter((t) => !t.up && inLeg(t.from, NEPTUNE) && inLeg(t.to, BELT));
+  if (outbound.length !== 1) out.push(`belt pair: ${outbound.length} rockets out`);
+  if (homeward.length !== 1) out.push(`belt pair: ${homeward.length} holes back`);
+  for (const trap of traps) {
+    if (outbound.includes(trap) || homeward.includes(trap)) continue;
+    if (Math.abs(trap.to - trap.from) > MAX_HOP) out.push(`long hop: ${trap.from} -> ${trap.to}`);
+  }
+
+  // Dropped into the Belt, the rocket out of it sits later on the track.
+  if (outbound[0] && homeward[0] && outbound[0].from <= homeward[0].to) {
+    out.push(`sequence: rocket ${outbound[0].from} is not above landing ${homeward[0].to}`);
+  }
+
+  // Same kinds keep their distance; different kinds may touch.
+  for (const up of [true, false]) {
+    const starts = traps.filter((trap) => trap.up === up).map((trap) => trap.from).sort((a, b) => a - b);
+    for (let i = 1; i < starts.length; i++) {
+      if (starts[i] - starts[i - 1] < 2) {
+        out.push(`adjacent ${up ? 'rockets' : 'holes'}: ${starts[i - 1]}, ${starts[i]}`);
+      }
+    }
+  }
+
+  // Everything else: counts, hops, uniqueness and the two-or-three rule.
+  for (const trap of traps) {
+    const hop = Math.abs(trap.to - trap.from);
+    if (trap.from > LEGS[LEGS.length - 2].hi) out.push(`home stretch: ${trap.from}`);
+    if (hop < MIN_HOP) out.push(`hop out of range: ${trap.from} -> ${trap.to}`);
+    if (trap.up !== (trap.to > trap.from)) out.push(`wrong way: ${trap.from} -> ${trap.to}`);
+    if (sources.has(trap.to)) out.push(`lands on a source: ${trap.to}`);
+  }
+  if (sources.size !== traps.length) out.push('a source is reused');
+  if (lands.size !== traps.length) out.push('a landing is reused');
+  if (board.rockets.length !== PER_KIND) out.push(`rockets: ${board.rockets.length}`);
+  if (board.holes.length !== PER_KIND) out.push(`holes: ${board.holes.length}`);
+
+  for (let leg = 1; leg <= 8; leg++) {
+    const here = traps.filter((trap) => inLeg(trap.from, leg));
+    const name = LEGS[leg].name;
     if (here.length < 2 || here.length > 3) out.push(`${name}: ${here.length} traps`);
     if (!here.some((trap) => trap.up)) out.push(`${name}: no rocket`);
     if (!here.some((trap) => !trap.up)) out.push(`${name}: no hole`);
   }
-
-  const sorted = [...starts].sort((a, b) => a - b);
-  for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i] - sorted[i - 1] < 2) out.push(`sources touch: ${sorted[i - 1]}, ${sorted[i]}`);
-  }
-  if (starts.size !== traps.length) out.push('a source is reused');
-  if (ends.size !== traps.length) out.push('a landing is reused');
-  if (board.rockets.length !== PER_KIND) out.push(`rockets: ${board.rockets.length}`);
-  if (board.holes.length !== PER_KIND) out.push(`holes: ${board.holes.length}`);
 
   const lift = board.rockets.reduce((sum, [from, to]) => sum + (to - from), 0);
   const drag = board.holes.reduce((sum, [from, to]) => sum + (from - to), 0);
@@ -112,64 +161,102 @@ export function violations(board: Board): string[] {
 // Placement
 // ============================================
 
-function addTrap(
+interface Tally {
+  sources: Set<number>;
+  lands: Set<number>;
+  rockets: Set<number>;
+  holes: Set<number>;
+  slots: Slot[];
+}
+
+function place(
   up: boolean,
-  leg: number,
+  fromLo: number,
+  fromHi: number,
+  toLo: number,
+  toHi: number,
+  maxHop: number,
   rand: () => number,
-  starts: Set<number>,
-  ends: Set<number>,
-  out: Slot[],
-  tight: boolean,
-): boolean {
-  const [lo, hi] = legRange(leg);
+  tally: Tally,
+  fixed = false,
+): Slot | null {
+  const kin = up ? tally.rockets : tally.holes;
 
   for (let pick = 0; pick < CANDIDATES; pick++) {
-    const from = between(rand, lo, hi);
-    if (starts.has(from) || ends.has(from)) continue;
-    if (starts.has(from - 1) || starts.has(from + 1)) continue;
+    const from = between(rand, fromLo, fromHi);
+    if (tally.sources.has(from) || tally.lands.has(from)) continue;
+    if (kin.has(from - 1) || kin.has(from + 1)) continue;
 
-    // Room for the shortest legal hop that still lands in the target zone.
-    const room = (up ? LAST_TARGET - from : from - FIRST_TARGET);
-    const span = Math.min(tight ? MIN_HOP : MAX_HOP, room);
-    if (span < MIN_HOP) continue;
+    const low = up ? Math.max(toLo, from + MIN_HOP) : Math.max(toLo, from - maxHop);
+    const high = up ? Math.min(toHi, from + maxHop) : Math.min(toHi, from - MIN_HOP);
+    if (low > high) continue;
 
-    const hop = between(rand, MIN_HOP, span);
-    const to = up ? from + hop : from - hop;
-    if (starts.has(to) || ends.has(to)) continue;
+    const to = fixed ? (up ? from + maxHop : from - MIN_HOP) : between(rand, low, high);
+    if (to < low || to > high) continue;
+    if (tally.sources.has(to) || tally.lands.has(to)) continue;
 
-    starts.add(from);
-    ends.add(to);
-    out.push({ from, to, up });
-    return true;
+    tally.sources.add(from);
+    tally.lands.add(to);
+    kin.add(from);
+    const slot = { from, to, up };
+    tally.slots.push(slot);
+    return slot;
   }
 
-  return false;
+  return null;
+}
+
+function toBoard(tally: Tally): Board {
+  const rockets = tally.slots.filter((s) => s.up).map((s) => [s.from, s.to] as const);
+  const holes = tally.slots.filter((s) => !s.up).map((s) => [s.from, s.to] as const);
+  const byStart = new Map<number, number>(tally.slots.map((s) => [s.from, s.to]));
+  return { rockets, holes, resolve: (square) => byStart.get(square) };
 }
 
 function attempt(seed: number, tight: boolean): Board {
   const rand = lcg(seed);
-  const starts = new Set<number>();
-  const ends = new Set<number>();
-  const traps: Slot[] = [];
+  const tally: Tally = {
+    sources: new Set(),
+    lands: new Set(),
+    rockets: new Set(),
+    holes: new Set(),
+    slots: [],
+  };
 
-  // Quotas first: two legs of three, the rest one rocket and one hole.
-  const extraRockets = between(rand, 0, LEGS - 1);
-  let extraHoles = between(rand, 0, LEGS - 2);
-  if (extraHoles >= extraRockets) extraHoles += 1;
+  // Earth: one rocket off the pad, never landing back in 1-10.
+  place(true, LEGS[0].lo + 1, LEGS[0].hi, LEGS[1].lo, LEGS[2].hi, MAX_HOP, rand, tally, tight);
 
-  for (let leg = 0; leg < LEGS; leg++) {
-    const rockets = leg === extraRockets ? 2 : 1;
-    const holes = leg === extraHoles ? 2 : 1;
-    for (let i = 0; i < rockets; i++) addTrap(true, leg, rand, starts, ends, traps, tight);
-    for (let i = 0; i < holes; i++) addTrap(false, leg, rand, starts, ends, traps, tight);
+  // Neptune's hole first, so the rocket out of the Belt can start above its landing.
+  const back = place(
+    false,
+    LEGS[NEPTUNE].lo,
+    LEGS[NEPTUNE].hi,
+    LEGS[BELT].lo,
+    LEGS[BELT].hi,
+    PAIR_HOP,
+    rand,
+    tally,
+  );
+  if (back && back.to < LEGS[BELT].hi) {
+    place(true, back.to + 1, LEGS[BELT].hi, LEGS[NEPTUNE].lo, LEGS[NEPTUNE].hi, PAIR_HOP, rand, tally);
   }
 
-  const rockets = traps.filter((trap) => trap.up).map((trap) => [trap.from, trap.to] as const);
-  const holes = traps.filter((trap) => !trap.up).map((trap) => [trap.from, trap.to] as const);
-  const byStart = new Map<number, number>();
-  for (const { from, to } of traps) byStart.set(from, to);
+  // The pair's own second traps, both short.
+  place(true, LEGS[NEPTUNE].lo, LEGS[NEPTUNE].hi, LEGS[1].lo, LAST_TARGET, MAX_HOP, rand, tally, tight);
+  place(false, LEGS[BELT].lo, LEGS[BELT].hi, LEGS[1].lo, LAST_TARGET, HOLE_HOP, rand, tally, tight);
 
-  return { rockets, holes, resolve: (square) => byStart.get(square) };
+  // The open legs: one rocket and one hole each, one of them with a second hole.
+  const extra = OPEN_LEGS[between(rand, 0, OPEN_LEGS.length - 1)];
+  for (const leg of OPEN_LEGS) {
+    const { lo, hi } = LEGS[leg];
+    place(true, lo, hi, LEGS[1].lo, LAST_TARGET, MAX_HOP, rand, tally, tight);
+    place(false, lo, hi, LEGS[1].lo, LAST_TARGET, HOLE_HOP, rand, tally, tight);
+    if (leg === extra) {
+      place(false, lo, hi, LEGS[1].lo, LAST_TARGET, HOLE_HOP, rand, tally, tight);
+    }
+  }
+
+  return toBoard(tally);
 }
 
 export function makeBoard(seed: number): Board {
