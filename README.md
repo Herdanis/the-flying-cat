@@ -124,3 +124,8 @@ npm test      # rules, state and animation paths — no browser needed
 
 The original TUI lives in git history and on the `tui` branch. It is not
 maintained; the rules here are the reference now.
+
+## Published
+
+The image is published to `ghcr.io/herdanis/the-flying-cat`, and the game is
+played at <https://game.haydn.web.id>.

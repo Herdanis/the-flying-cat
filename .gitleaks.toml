@@ -1,0 +1,11 @@
+title = "gitleaks config - dino ladder"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "generated output and installed dependencies"
+paths = [
+  '''node_modules/''',
+  '''dist/''',
+]

@@ -1,0 +1,9 @@
+name: GitLeak
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gitleaks:
+    uses: Herdanis/the-invisible-mouse/.github/workflows/gitleak.yaml@main
